@@ -1,0 +1,115 @@
+\documentclass[12pt,fleqn]{article}
+%\documentclass[12pt,a4paper]{article}
+\usepackage{natbib}
+\usepackage{lineno}
+%\usepackage{lscape}
+%\usepackage{rotating}
+%\usepackage{rotcapt, rotate}
+\usepackage{amsmath,epsfig,epsf,psfrag}
+\usepackage{setspace}
+\usepackage{ulem}
+\usepackage{xcolor}
+\usepackage[labelfont=bf,labelsep=period]{caption} %for making figure and table numbers bold
+\usepackage[colorlinks,bookmarksopen,bookmarksnumbered,citecolor=red,urlcolor=red]{hyperref}
+
+%\usepackage{a4wide,amsmath,epsfig,epsf,psfrag}
+
+
+\def\be{{\ensuremath\mathbf{e}}}
+\def\bx{{\ensuremath\mathbf{x}}}
+\def\bX{{\ensuremath\mathbf{X}}}
+\def\bthet{{\ensuremath\boldsymbol{\theta}}}
+\newcommand{\VS}{V\&S}
+\newcommand{\tr}{\mbox{tr}}
+%\renewcommand{\refname}{\hspace{2.3in} \normalfont \normalsize LITERATURE CITED}
+%this tells it to put 'Literature Cited' instead of 'References'
+\bibpunct{(}{)}{,}{a}{}{;}
+\oddsidemargin 0.0in
+\evensidemargin 0.0in
+\textwidth 6.5in
+\headheight 0.0in
+\topmargin 0.0in
+\textheight=9.0in
+%\renewcommand{\tablename}{\textbf{Table}}
+%\renewcommand{\figurename}{\textbf{Figure}}
+\renewcommand{\em}{\it}
+
+\begin{document}
+
+\begin{center} \bf {\large USING SPATIO-TEMPORAL MODELS TO INFER ECOLOGICAL DYNAMICS AND ESTIMATE ANIMAL ABUNDANCE FROM TRANSECT COUNTS}
+
+\vspace{0.7cm}
+Paul B. Conn$^{1*}$, Devin S. Johnson$^1$, Jay M. Ver Hoef$^1$, Mevin B. Hooten$^{2,3,4}$, Josh M. London$^1$, and Peter L. Boveng$^1$
+\end{center}
+\vspace{0.5cm}
+
+\rm
+\small
+
+\it $^1$National Marine Mammal Laboratory, Alaska Fisheries Science Center,
+NOAA National Marine Fisheries Service,
+Seattle, Washington 98115 U.S.A.\\
+
+\it $^2$U.S. Geological Survey, Colorado Cooperative Fish and Wildlife Research Unit, Colorado State University, Fort Collins, CO 80523 U.S.A.\\
+
+\it $^3$Department of Fish, Wildlife, and Conservation Biology, Colorado State University, Fort Collins, CO 80523 U.S.A.\\
+
+\it $^3$Department of Statistics, Colorado State University, Fort Collins, CO 80523 U.S.A.\\
+
+\rm \begin{flushleft}
+
+\raggedbottom
+
+\begin{center}
+Appendix S1: Gibbs sampling for estimating spatio-temporal abundance from transect counts
+\bigskip
+\end{center}
+
+\doublespacing
+For each spatio-temporal model fit to animal transect counts, we used Gibbs sampling \citep[see e.g.][]{GelmanEtAl2004} to obtain Markov chain Monte Carlo samples from the posterior distribution of model parameters given the data.  Parameters were iteratively sampled from their full conditional distributions, some of
+which were available in closed form, and some of which had to be sampled using Metropolis-Hastings steps.  For each spatio-temporal model structure considered, we provide a fuller mathematical treatment than in the main manuscript, provide details on prior distributions, and describe the full conditional distributions necessary for Gibbs sampler construction.  Throughout this treatment, we use several standard statistical conventions.  For instance, we use the bracket notation $[X]$ to denote the distribution (e.g. through a joint probability density function) of $X$, $[X|Y]$ to denote the conditional distribution of $X$ given $Y$, and bold symbols to denote vectors or matrices of parameters. Software to implement these models on real datasets are provided in an online supplement, and are available online at \url{https://github.com/NMML}.
+
+\section{Additive space-time (AST) model}
+
+The first type of spatio-temporal model that we implemented was a separable space-time model where spatial and temporal random effects are modeled independently.  \citet{VerHoefJansen2007} used such a model to successfully model harbor seal abundance from transect counts.  This formulation is attractive due to the potentially small number of random effect parameters relative to a model with space-time interactions, but is restrictive in the sense that it does not permit residual spatial error to vary over time.  Assuming that count data are available on spatially referenced sampling units, we write the joint posterior distribution of latent abundance ($\boldsymbol{\mu}$) and other model parameters given data as
+\begin{eqnarray}
+  [\boldsymbol{\mu},\boldsymbol{\theta} | {\bf x},{\bf C},{\bf o}] & \propto & [{\bf C} | {\bf o}, \boldsymbol{\mu}] [\boldsymbol{\mu} | \boldsymbol{\theta},{\bf x}] [\theta],
+  \label{eq:hmod}
+\end{eqnarray}
+where $\boldsymbol{\theta}$ denote the collection of all parameters other than latent abundance, ${\bf x}$ denote data from individual sample units (e.g. habitat covariates) that are used to help predict abundance, ${\bf C}$ denote temporally and spatially referenced animal counts, and ${\bf o}$ denote linear model offsets used to encapsulate the proportion of area sampled in different sampling units.
+
+The observation model $[{\bf C} | {\bf o}, \boldsymbol{\mu}]$ describes how count data arise from different levels of sampling effort and latent abundance parameters.  For purposes of this paper, we assume that count data are Poisson distributed, such that 
+
+\begin{eqnarray*}
+  [{\bf C} | {\bf o}, \boldsymbol{\mu}] \equiv \textrm{Poisson}({\bf \lambda}), \textrm{ where} \nonumber \\
+  \boldsymbol{\lambda} & = & \exp \left( {\bf o} + {\bf H}\boldsymbol{\mu} \right)  
+  \mu_{s,t} & = & {\bf X}_{s,t} \boldsymbol{\beta} + \eta_s + \gamma_t + \epsilon_{s,t}.
+\end{eqnarray*}
+
+
+The joint posterior distribution for the hierarchical model proposed in the main article can be factored (up to a proportionality constant) as
+\begin{linenomath*}
+\begin{eqnarray}
+  \lefteqn{[\boldsymbol{\beta},\boldsymbol{\eta},\boldsymbol{\nu},\boldsymbol{S},\boldsymbol{\tau}_\eta,\boldsymbol{\tau}_\nu,
+  {\bf p},\boldsymbol{\theta},\boldsymbol{\pi} | {\bf O},{\bf Z}] \propto }
+  \label{eq:joint_post}
+  \\
+  & & [\boldsymbol{\nu}|\boldsymbol{\beta},\boldsymbol{\eta},\boldsymbol{\tau}_\nu][\boldsymbol{\eta}|\boldsymbol{\tau}_\eta][\boldsymbol{\tau}_\eta][\boldsymbol{\tau}_\nu][\boldsymbol{\beta}] \nonumber \\
+  & \times & [{\bf S} | \boldsymbol{\nu}, {\bf p}][{\bf p}] \nonumber \\
+  & \times & [{\bf O} | {\bf S},\boldsymbol{\pi}][\boldsymbol{\pi}] \nonumber \\
+  & \times & [{\bf Z} | {\bf S},\boldsymbol{\theta}][\boldsymbol{\theta}], \nonumber
+\end{eqnarray}
+\end{linenomath*}
+where $[X|Y]$ denotes the conditional distribution of X given Y (recall that notation is defined in Table 1 of the main article).  Note that all symbols are bold in Eq. \ref{eq:joint_post} as they all represent vectors or matrices.
+We will refer to the components of Eq. \ref{eq:joint_post} as our ``Spatial regression model," ``Local abundance model," ``Species misclassification model," and ``Individual covariate model," respectively.
+
+\hspace{.5in}To eliminate parameter redundancy
+
+\renewcommand{\refname}{Literature Cited}
+\bibliographystyle{JEcol}
+
+\bibliography{master_bib}
+
+\end{flushleft}
+\end{document}
+

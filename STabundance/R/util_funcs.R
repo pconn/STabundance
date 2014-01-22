@@ -1,4 +1,4 @@
-#' generate initial values for misID model if not already specified by user
+#' generate initial values for if not already specified by user
 #' @param DM.hab.pois   a list of design matrices for the Poisson habitat model (elements are named sp1,sp2, etc.)
 #' @param DM.hab.bern   If a hurdle model, a list of design matrices for the Bernoulli habitat model (elements are named sp1,sp2, etc.) (NULL if not hurdle)
 #' @param N.hab.pois.par  vector giving number of parameters in the Poisson habitat model for each species
@@ -49,28 +49,8 @@ generate_inits_BOSS<-function(DM.hab.pois,DM.hab.bern,N.hab.pois.par,N.hab.bern.
 }
 
 
-sample_nophoto_sp<-function(itrans,Lam,n.sp)sample(n.sp,1,prob=Lam[,itrans])
 
-#function to match Cur.vec with a row of the matrix Pointer
-get_place<-function(Cur.vec,Pointer){  #requires that columns of Cur.vec match up with Pointer!!
-  n.compare=ncol(Pointer)
-  I.match=(Pointer[,1]==Cur.vec[1])
-  if(n.compare>1){
-    for(itmp in 2:n.compare){
-      I.match=I.match*(Pointer[,itmp]==Cur.vec[itmp])
-    }  
-  }
-  which(I.match==1)
-}
-
-#functions to extract matrix and list entries given index vectors for rows and column
-get_mat_entries<-function(tmp,Mat,Row,Col)Mat[Row[tmp],Col[tmp]]
-get_conf_entries<-function(tmp,Conf,List.num,Row,Col)Conf[[List.num[tmp]]][Row[tmp],Col[tmp]]
-
-
-
-
-#' function to convert BOSS MCMC list vector (used in estimation) into an mcmc object (cf. coda package) 
+#' function to convert MCMC list vector (used in estimation) into an mcmc object (cf. coda package) 
 #' @param MCMC list vector providing MCMC samples for each parameter type 
 #' @param N.hab.pois.par see help for mcmc_ds.R
 #' @param N.hab.bern.par see help for mcmc_ds.R
@@ -143,29 +123,8 @@ convert.BOSS.to.mcmc<-function(MCMC,N.hab.pois.par,N.hab.bern.par,Cov.par.n,Hab.
 }
 
 
-#' function to calculate observation probability matrix
-#' @param Cur.mat holds observation probability matrix (nrows=number of species, cols=number of observation types)
-#' @param Alpha Confusion matrix - rows are for true species - cols are for observed species
-#' @param C  Array holding c_{skm} = the probability that an individual truly of species s but observed to be species k will have certainty covariate m
-#' @param n.species  number of species
-#' @param n.conf number of confidence categories
-#' @export
-#' @author Paul B. Conn
-get_misID_mat<-function(Cur.mat,Alpha,C,n.species,n.conf){
-  for(isp in 1:n.species){
-    for(iobs in 1:(n.species+1))
-      for(iconf in 1:n.conf){
-        Cur.mat[isp,n.conf*(iobs-1)+iconf]=Alpha[isp,iobs]*C[isp,iobs,iconf]
-     }
-  }
-  Cur.mat[,ncol(Cur.mat)-n.conf+1]=0
-  Cur.mat[,ncol(Cur.mat)-n.conf+1]=1-apply(Cur.mat,1,'sum')
-  Cur.mat
-}
-
-
-#' function to calculate posterior predictive loss given the output object from BOSS analysis
-#' @param Out Output object from running hierarchicalDS
+#' function to calculate posterior predictive loss given the output object from ST analysis
+#' @param Out Output object from running spatio-temporal estimation routine
 #' @param burnin Any additional #'s of values from beginning of chain to discard before calculating PPL statistic (default is 0)
 #' @return A matrix with posterior variance (P), sums of squares (G) for the posterior mean and median predictions (compared to Observations), and total posterior loss (D)
 #' @export
@@ -195,63 +154,30 @@ post_loss_boss<-function(Out,burnin=0){
   Loss
 }
 
-plot_covar<-function(DM,MCMC,Vars,n.species,n.points=20,Sp.names,const.tau=NULL,bern=FALSE){
-  #assumes additive covariates (no interactions) and that polynomial terms have names like "ice2"
-  #determine number of plots that will be required
-  #determine which covariates have the keyword "var" in them
-  require(ggplot2)
-  my_grep<-function(cur.eff,cur.var)(length(grep(cur.var,cur.eff))>0)
-  n.var=length(Vars)
-  mcmc.str="Hab.pois.sp"
-  if(bern==TRUE)mcmc.str="Hab.bern.sp"
-  plot.df=data.frame(matrix(0,n.species*n.points*n.var,4))
-  colnames(plot.df)=c("Species","Cov.name","Value","Abundance")
-  if(is.null(const.tau)){
-    Tau=rep(0,n.species)
-    for(isp in 1:n.species)Tau[i]=mean(eval(parse(text=paste("MCMC[,'tau.nu.sp",isp,"']",sep=''))))
+#' Produce an RW2 structure matrix for a line (e.g. for time series)
+#' @param x length of vector
+#' @return RW2 precision matrix
+#' @export 
+#' @keywords adjacency
+#' @author Paul Conn
+linear_adj_RW2 <- function(x){
+  require(Matrix)
+  Q=Matrix(0,x,x)
+  for(i in 1:(x-2)){
+    Q[i,i+2]=1
+    Q[i+2,i]=1
   }
-  else Tau=rep(const.tau,n.species)
-  cur.pl=1
-  for(isp in 1:n.species){
-    #pull out relevant columns from MCMC object
-    I.col=sapply(colnames(MCMC),'my_grep',cur.var=paste(mcmc.str,isp,sep=''))
-    Cur.MCMC=MCMC[,which(I.col==TRUE)]
-    for(ivar in 1:n.var){
-      cur.nchar=nchar(Vars[ivar])
-      cur.min=min(DM[[isp]][,Vars[ivar]])
-      cur.max=max(DM[[isp]][,Vars[ivar]])
-      Cur.x=seq(cur.min,cur.max,length.out=n.points)
-      Cur.DM=matrix(0,n.points,ncol(DM[[isp]]))
-      Cur.DM[,which(colnames(DM[[isp]])==Vars[ivar])]=Cur.x
-      I.effect=sapply(colnames(DM[[isp]]),"my_grep",cur.var=Vars[ivar])  
-      if(sum(I.effect)>1){ # fill in polynomial effects if >1
-        Cur.which=which(I.effect==TRUE)
-        for(i in 1:sum(I.effect)){
-          if(colnames(DM[[isp]])[Cur.which[i]]!=Vars[ivar]){
-            pol.eff=as.numeric(substr(colnames(DM[[isp]])[Cur.which[i]],cur.nchar+1,nchar(colnames(DM[[isp]])[Cur.which[i]])))
-            Cur.DM[,Cur.which[i]]=Cur.x^pol.eff
-          }
-        }
-      }
-      Cur.which=which(I.effect==FALSE)
-      for(i in 1:length(Cur.which)){
-        Cur.DM[,Cur.which[i]]=mean(DM[[isp]][,Cur.which[i]])
-      }
-      Cur.resp=exp(Cur.DM%*%t(Cur.MCMC)+0.5/Tau[isp])
-      plot.df[cur.pl:(cur.pl+n.points-1),"Species"]=Sp.names[isp]
-      plot.df[cur.pl:(cur.pl+n.points-1),"Cov.name"]=Vars[ivar]
-      plot.df[cur.pl:(cur.pl+n.points-1),"Value"]=Cur.x
-      plot.df[cur.pl:(cur.pl+n.points-1),"Abundance"]=apply(Cur.resp,1,'mean') #mean posterior prediction
-      cur.pl=cur.pl+n.points
-    }
+  for(i in 1:(x-1)){
+    Q[i,i+1]=-4
+    Q[i+1,i]=-4
   }
-  plot.df[,1]=as.factor(plot.df[,1])
-  plot.df[,2]=as.factor(plot.df[,2])
-  myPlot=ggplot(plot.df)+geom_line(aes(x=Value,y=Abundance,color=Species),size=1.5)+facet_wrap(~Cov.name,scales='free')
-  myTheme=theme(text=element_text(size=20),axis.text=element_text(size=11))
-  myPlot=myPlot+myTheme
-  myPlot
-}
+  Q[1,2]=-2
+  Q[2,1]=-2
+  Q[x,x-1]=-2
+  Q[x-1,x]=-2
+  diag(Q)=-rowSums(Q)
+  Q
+}  
 
 #' Produce an RW1 adjacency matrix for a rectangular grid for use with areal spatial models (queens move)
 #' @param x number of cells on horizontal side of grid
@@ -342,9 +268,20 @@ d_biv_normal<-function(Tmp.vec,XY,Sigma){
   return(dnorm(XY[1,],0,Sigma[1])*dnorm(XY[2,],0,Sigma[2]))
 }
   
-
-plot_N_map<-function(cur.t,N,Grid,highlight=NULL){
+#' Function to plot abundance map for BOSS survey grid
+#' @param cur.t  Time step to plot map for
+#' @param N A matrix holding abundance point estimates; different rows correspond to different sampling units, columns correspond to time step
+#' @param Grid A list object, each element of which holds a spatial polygons data frame for each time step
+#' @param highlight If provided, this vector specifies which cells to separately highlight during plotting
+#' @param cell.width if highlight is provided, cell.width must provide the width of a composite grid cell
+#' @param leg.title Title for legend of plot (if different from the default "Abundance")
+#' @return An abundance map
+#' @export 
+#' @keywords abundance map, plot
+#' @author Paul Conn \email{paul.conn@@noaa.gov}
+plot_N_map<-function(cur.t,N,Grid,highlight=NULL,cell.width,leg.title="Abundance"){
   require(rgeos)
+  require(ggplot2)
   Tmp=Grid[[1]]
   if(is.null(highlight)==FALSE){
     midpoints=data.frame(gCentroid(Tmp[highlight,],byid=TRUE))
@@ -355,13 +292,61 @@ plot_N_map<-function(cur.t,N,Grid,highlight=NULL){
   new.colnames=colnames(Cur.df)
   new.colnames[1:2]=c("Easting","Northing")
   colnames(Cur.df)=new.colnames
-  p1=ggplot(Cur.df)+aes(Easting,Northing,fill=Abundance)+geom_raster()+tmp.theme
   tmp.theme=theme(axis.ticks = element_blank(), axis.text = element_blank())
+  p1=ggplot(Cur.df)+aes(Easting,Northing,fill=Abundance)+geom_raster()+tmp.theme+scale_fill_continuous(name=leg.title)
   if(is.null(highlight)==FALSE){
     #p1=p1+geom_rect(data=midpoints,size=0.5,fill=NA,colour="yellow",aes(xmin=Easting-25067,xmax=Easting,ymin=Northing,ymax=Northing+25067))
-    p1=p1+geom_rect(data=midpoints,size=0.5,fill=NA,colour="yellow",aes(xmin=Easting-25067/2,xmax=Easting+25067/2,ymin=Northing-25067/2,ymax=Northing+25067/2))
+    p1=p1+geom_rect(data=midpoints,size=0.5,fill=NA,colour="yellow",aes(xmin=Easting-1/2,xmax=Easting+1/2,ymin=Northing-1/2,ymax=Northing+1/2))
   }
   p1
 }
-  
-  
+
+#' SIMULATE AN ICAR PROCESS 
+#' @param Q Precision matrix for the ICAR process
+#' @return Spatial random effects
+#' @export 
+#' @keywords ICAR, simulation
+#' @author Devin Johnson
+rrw <- function(Q){
+  v <- eigen(Q, TRUE)
+  val.inv <- sqrt(ifelse(v$values>sqrt(.Machine$double.eps), 1/v$values, 0))
+  P <- v$vectors
+  sim <- P%*%diag(val.inv)%*%rnorm(dim(Q)[1], 0, 1)
+  X <- rep(1,length(sim))
+  if(sum(val.inv==0)==2) X <- cbind(X, 1:length(sim))
+  sim <- sim-X%*%solve(crossprod(X), crossprod(X,sim))
+  return(sim)
+}
+
+#' stack list of matrices into one big matrix
+#' @param L list vector of matrices
+#' @return X one matrix consisting of stacked elements of L
+#' @export 
+#' @keywords logit, expit
+#' @author Paul Conn \email{paul.conn@@noaa.gov}
+stack_list<-function(L){
+  X=L[[1]]
+  len.L=length(L)
+  if(len.L>1){
+    for(ilen in 2:len.L)X=rbind(X,L[[ilen]])  #could be better optimized
+  }
+  X
+}
+
+
+#' inverse logit transformation
+#' @param x quantity to be transformed
+#' @return real valued quantities
+#' @export 
+#' @keywords logit, expit
+#' @author Paul Conn \email{paul.conn@@noaa.gov}
+expit<-function(x)1/(1+exp(-x))
+
+#' logit transformation
+#' @param x quantity to be transformed
+#' @return logit value(s)
+#' @export 
+#' @keywords logit
+#' @author Paul Conn \email{paul.conn@@noaa.gov}
+logit<-function(x)log(x/(1-x))
+ 

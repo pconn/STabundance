@@ -21,20 +21,20 @@ T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
 \bibpunct[; ]{(}{)}{;}{}{}{,}
 
-\def\volumeyear{2011}
+\def\volumeyear{2014}
 \def\VOC{VO}
 
 \begin{document}
-\runningheads{P.~B.~Conn \& Coauthors}{Space-time abundance models}
+\runningheads{P.~B.~Conn et al.}{Space-time abundance models}
 
 \papertype{Article}
 
-\title{Using spatio-temporal models to estimate animal abundance and infer ecological dynamics from transect data \footnotemark[2]}
+\title{Using spatio-temporal models to infer ecological dynamics and estimate animal abundance from transect counts} %\footnotemark[2]}
 
-\author{P.~B. ~Conn\affil{1}\corrauth, Coauthors\affil{2}}
+\author{P.~B. ~Conn\affil{1}\corrauth, D.~S. ~Johnson\affil{1}, J.~M. ~Ver Hoef\affil{1}, M.~B. ~Hooten\affil{2}\affil{3}\affil{4},  J. ~M. ~London\affil{1}, P. ~L. ~Boveng\affil{1}}
 
 
-\address{\affilnum{1}National Marine Mammal Laboratory, Alaska Fisheries Science Center, NOAA National Marine Fisheries Service, 7600 Sand Point Way NE, Seattle, WA 98115;\affilnum{2}Coauthors address}
+\address{\affilnum{1}National Marine Mammal Laboratory, Alaska Fisheries Science Center, NOAA National Marine Fisheries Service, 7600 Sand Point Way NE, Seattle, WA 98115 USA;\affilnum{2}U.S. Geological Survey, Colorado Cooperative Fish and Wildlife Research Unit, Colorado State University, Fort Collins, CO 80523 USA;\affilnum{3} Department of Fish, Wildlife, and Conservation Biology, Colorado State University, Fort Collins, CO 80523 USA;\affilnum{4}Department of Statistics, Colorado State University, Fort Collins, CO 80523 USA}
 
 \corraddr{paul.conn@noaa.gov}
 
@@ -42,11 +42,11 @@ T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
  %\noindent {\emph{Summary}}
 \small
 \begin{enumerate}
-\item  Ecologists often estimate animal abundance using models fit to count data from transect surveys. Such models often require that animal density remains constant across the landscape where sampling is being conducted.  This assumption is problematic for animals inhabiting dynamic landscapes or otherwise exhibiting considerable spatio-temporal variation in density, and may be an impediment to those wishing to infer how changes in environmental conditions affect spatial distribution.  A variety of models have been developed for analyzing spatio-temporal variation in count data, but there has been little comparison of the efficacy of alternative modeling approaches for estimating animal abundance.
+\item  Ecologists often estimate animal abundance using models fit to transect survey count data. Such models often require that animal density remains constant across the landscape where sampling is being conducted.  This assumption is problematic for animals inhabiting dynamic landscapes or otherwise exhibiting considerable spatio-temporal variation in density, and may be an impediment to inference about how changes in environmental conditions affect animals' spatial distribution.  A variety of models have been developed for analyzing spatio-temporal variation in count data, but there has been little comparison of the efficacy of alternative modeling approaches for estimating animal abundance.
 
 \item We review several concepts from the burgeoning literature on spatio-temporal statistical models, including the nature of the temporal structure (i.e., descriptive or dynamical) and strategies for dimension reduction to promote computational tractability.  We also review several features as they specifically relate to abundance estimation, including boundary conditions, population closure, choice of link function, and extrapolation of predicted relationships to unsampled areas.
 
-\item We compare a suite of novel and existing spatio-temporal hierarchical models for animal count data that permit animal density to vary over space and time.  Models varied by the nature of the temporal structure (i.e., descriptive or dynamical), and whether total expected abundance was assumed constant over time (a pseudo-closure assumption).  We gauge the relative performance (bias, precision, computational demands) of alternative spatio-temporal models when confronted with simulated and real datasets from dynamic animal populations.  For the latter, we analyze count data from a survey of ice-associated seals in the Bering Sea where the quantity and quality of suitable habitat (sea ice) changed dramatically while surveys were being conducted.
+\item We compare a suite of novel and existing spatio-temporal hierarchical models for animal count data that permit animal density to vary over space and time.  Models varied by the nature of the temporal structure (i.e., descriptive or dynamical), and whether total expected abundance was assumed constant over time (a pseudo-closure assumption).  We gauge the relative performance (bias, precision, computational demands) of alternative spatio-temporal models when confronted with simulated and real datasets from dynamic animal populations.  For the latter, we analyze spotted seal counts from an aerial survey of the Bering Sea where the quantity and quality of suitable habitat (sea ice) changed dramatically while surveys were being conducted.
 
 \item Later...
 
@@ -56,7 +56,7 @@ T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 % Word count: 5332
 \end{abstract}
 
-\keywords{Animal abundance, resource selection, process convolution, restricted spatial regression, spatio-temporal model, transect survey}
+\keywords{Animal abundance, resource selection, process convolution, spatio-temporal model, transect survey}
 
 \maketitle \linenumbers
 
@@ -73,7 +73,7 @@ the landscape while sampling is being conducted.  This assumption is clearly unr
 
 Early development of models for analysis of animal transect data \citep[see e.g.][and references therein]{BucklandEtAl2001} focused on design-based estimation \citep[cf.][]{Cochran1977}, which is perhaps the most simple and reliable approach for obtaining ``snapshot" estimates of abundance, provided that the spatial configuration of animal density does not vary appreciably while the study is being conducted and that a sampling frame (e.g. systematic, stratified random samples) can be developed and strictly adhered to.  More recently, model-based approaches for analyzing animal abundance from transect counts \citep[e.g.][]{HedleyBuckland2004,VerHoefJansen2007,JohnsonEtAl2010} have become more prevalent. Although these approaches require additional (often distributional) assumptions, model-based inference permits greater flexibility because sampling effort can be allocated at different times and locations than originally planned, and because features such as temporal \citep{Moore2011} and spatial \citep[see e.g.][]{MillerEtAl2013} autocorrelation can be included and visualized.
 
-Development of model-based estimation procedures for transect data have largely focused on inclusion of spatial variation in abundance without as much consideration of temporal variation.  Notable exceptions include \citet{VerHoefJansen2007}, who included changing habitat covariates and separable spatial and temporal effects in count models for harbor seals; \citet{MillerEtAl11jwm}, who allowed bird density to rely on habitat covariates that varied between sample occasions \citep[using an N-mixture formulation; see][]{Royle2004}; \citet{Moore2011}, who allowed the modelled density of fin whales to vary among years and spatial strata; and \citet{VerHoefEtAl2014}, who conceptualized phocid seal counts as a function of both changing habitat covariates and spatially autocorrelated random effects.  Hierarchical generalized linear mixed models incorporating both spatial and temporal effects are also prevalent in analysis of population trend from count data \citep[e.g.][]{SauerLink2011,RossEtAl2012}, but it is not often possible to scale up from these models to the estimates of absolute density or abundance that are often needed for population management.
+Development of model-based estimation procedures for transect data have largely focused on inclusion of spatial variation in abundance without as much consideration of temporal variation.  Notable exceptions include \citet{VerHoefJansen2007}, who included changing habitat covariates and additive spatial and temporal effects in count models for harbor seals; \citet{MillerEtAl11jwm}, who allowed bird density to rely on habitat covariates that varied between sample occasions \citep[using an N-mixture formulation; see][]{Royle2004}; \citet{Moore2011}, who allowed the modelled density of fin whales to vary among years and spatial strata; and \citet{VerHoefEtAl2014}, who conceptualized phocid seal counts as a function of both changing habitat covariates and spatially autocorrelated random effects.  Hierarchical generalized linear mixed models incorporating both spatial and temporal effects are also prevalent in analysis of population trend from count data \citep[e.g.][]{SauerLink2011,RossEtAl2012}, but it is not often possible to scale up from these models to the estimates of absolute density or abundance that are often needed for population management.
 
 The statistical literature on spatio-temporal models has exploded in recent years (see \citeauthor{CressieWikle2011} \citeyear{CressieWikle2011} for a review), and in theory it would be possible to embed a large number of spatio-temporal models for animal density into model-based estimation procedures for transect counts.  \citet{CressieWikle2011} categorize such models as either descriptive, where spatio-temporal autocorrelation is codified by allowing positive covariance at times and locations that are close together, or dynamical (i.e. process-based), where the investigator uses knowledge of the study system to help specify a dynamical model governing the evolution of the spatio-temporal process over time \citep[e.g. via difference equations;][]{WikleHooten2010}.  Spatio-temporal models often include one or more strategies for dimension reduction to ease computational burden \citep[of which there are many; for a review see][]{Wikle2010}.  As such, it will not be possible to enumerate all possible approaches for incorporating spatio-temporal structure into abundance models.
 Instead, we start by reviewing recent work in this field, aiming to provide ecologists with intuition on the flavors of spatio-temporal models currently available in the literature, providing connections with relevant ecological theory where applicable \citep[e.g. with ideal free distributions;][]{FretwellLucas1970}.
@@ -141,7 +141,7 @@ For both approaches (spectral decomposition and process convolution), dimension 
    \boldsymbol{\eta} & = & {\bf K} \boldsymbol{\alpha},
  \label{eq:reduced-spat}
 \end{eqnarray}
-where $1 \times m$ dimensional vector $\boldsymbol{\alpha}$ holds spatial random effects on a reduced parameter space (corresponding to individual eigenvectors) in the case of spectral decomposition, or weights associated with the kernels centered at each of the $m$ knot locations in the case of process convolution. The $S \times m$ dimensional matrix ${\bf K}$ maps these random effects (or weights) to $S$-dimensional space.  In the case of spectral decomposition, $K$ simply holds modeled eigenvectors from the eigendecomposition of the full dimension covariance matrix; in the case of process convolution, the entries in ${\bf K}$ correspond to distance-specific kernel densities used to interpolate between the $m$ knots and the $S$ spatio-temporal locations being modeled.  We illustrate the use of dimension reduction in spatio-temporal abundance applications in a later section (see {\it Spatio-temporal abundance models}).
+where $1 \times m$ dimensional vector $\boldsymbol{\alpha}$ holds spatial random effects on a reduced parameter space (corresponding to individual eigenvectors) in the case of spectral decomposition, or weights associated with the kernels centered at each of the $m$ knot locations in the case of process convolution. The $S \times m$ dimensional matrix ${\bf K}$ maps these random effects (or weights) to $S$-dimensional space.  In the case of spectral decomposition, $K$ simply holds modeled eigenvectors from the eigendecomposition of the full dimension covariance matrix; in the case of process convolution, the entries in ${\bf K}$ are proportional to distance-specific kernel densities used to interpolate between the $m$ knots and the $S$ spatio-temporal locations being modeled.  We illustrate the use of dimension reduction in spatio-temporal abundance applications in a later section (see {\it Spatio-temporal abundance models}).
 
 \subsection{Abundance estimation considerations}
 
@@ -172,24 +172,20 @@ The standard procedure for generating abundance estimates from hierarchical mode
 We consider several different parameterizations for descriptive and dynamical models and examine their performance
 in analyzing simulated and real datasets.
 
-\subsection{Separable space-time (SST) formulation}
+\subsection{Additive space-time (AST) formulation}
 
-The first approach we describe is a simple descriptive model for $\mu_{s,t}$ that includes separable spatial and
-temporal structure.  To induce this structure, we modify eqn. \ref{eq:glmm} as
+The first approach we describe is a simple descriptive model for $\mu_{s,t}$ that includes additive spatial and
+temporal structure (i.e., omitting space-time interactions).  To induce this structure, we modify eqn. \ref{eq:glmm} as
 \begin{eqnarray*}
-  \mu_{s,t} & = & {\bf X}_{s,t} \boldsymbol{\beta} + \eta_s + \gamma_t + \epsilon_{s,t},
+  \mu_{s,t} & = & {\bf X}_{s,t} \boldsymbol{\beta} + \eta_s + \gamma_t + \epsilon_{s,t}.
 \end{eqnarray*}
-and specify an AR(1) temporal autocorrelation structure on $\gamma_t$:
-\begin{eqnarray*}
-   \gamma_t & = & \begin{cases}
-                    \sigma_\gamma Z_{\gamma,t} & \text{if }t=1 \\
-                    \phi \gamma_{t-1} + \sigma_\gamma Z_{\gamma,t} & \text{if }t>1.
-                  \end{cases}
-\end{eqnarray*}
-Here, $\sigma_\gamma$ gives the standard deviation of time effects, $Z_{\gamma,t}$ denote standard normal random variables, and $\phi$ describes an autoregressive parameter constrained to take on values in (-1,1).  Note that \citet{VerHoefJansen2007} considered a similar structure, but also included zero inflation.  We consider a dimension reduced version for spatial random effects $\eta_s$, using a spectral decomposition of the standard intrinsic conditionally autoregressive (ICAR) model \citep{RueHeld2005}.  We follow a number of recent ecological studies \citep[e.g.][]{HootenEtAl2013,JohnsonEtAl2013,ConnEtAl2014} in choosing a restricted parameterization for spatial random effects that removes any potential confounding with habitat covariate effects while simultaneously achieving dimension reduction \citep[i.e. restricted spatial regression - RSR;][]{ReichEtAl2006,HodgesReich2010,HughesHaran2013}.   This approach, together with details on prior specification and MCMC sampler implementation, are formally described in Appendix S1.
+The implication of this additive construction is that the temporal random effect $\gamma_t$ is uniformly applied to each sample unit; if habitat covariates were to remain constant, non-zero $\gamma_t$ effects would lead to uniform expected increases or decreases in log abundance across the entire landscape (as opposed to redistribution of abundance).
+
+We model spatial structure by distributing knots across the landscape and imposing a process convolution model for $\eta_s$ as in eqn. \ref{eq:reduced-spat}.  In this case, the random spatial effects, $\boldsymbol{\alpha}$, represent weights associated with each knot locations, and are given independent Gaussian prior distributions.
+For $\gamma_t$, we specify an RW2 ICAR prior distribution, which is a second-order Markov random walk time series process \citep{RueHeld2005}.  This formulation imposes a smoother temporal trend in latent log abundance than would a first-order Markov random walk (or RW1) process.  We describe a Bayesian implementation of this model in Appendix S1
 
 \subsection{A spatio-temporal process convolution (STPC) model}
-Thinking of using something like
+We
 \begin{eqnarray*}
   \mu_{s,t} & = & {\bf X}_{s,t} \boldsymbol{\beta} + \kappa_{s,t} + \epsilon_{s,t} \\
   \kappa_{s,t} & = & {\bf K} \boldsymbol{\alpha}_t \\
@@ -198,7 +194,7 @@ Thinking of using something like
                     \phi_\alpha \alpha_{m,t-1} + \sigma_\alpha Z_{\alpha,m,t} & \text{if }t>1.
                   \end{cases}
 \end{eqnarray*}
-So basically a spatial convolution where weights associated with each of the knots evolves in time according to an AR1 process... inspired by \citet{Higdon2002}.  Other suggestions?
+So basically a spatial convolution where weights associated with each of the knots evolves in time according to an AR1 process... inspired by \citet{CalderEtAl2002,Higdon2002}.  Other suggestions?
 
 \subsection{Resource selection models}
 
@@ -255,7 +251,7 @@ ideal free model where abundance is reallocated to sample units at each time ste
   \label{eq:cpif-post}
 \end{eqnarray}
 In this case, we still consider a Poisson observation model $[{\bf C} | {\bf o}, \boldsymbol{\lambda}]$, such that
-${\bf C} \sim \text{Poisson}({\bf o} \bigodot {\bf H}\boldsymbol{\lambda})$, where the matrix ${\bf H}$ maps the full set site and time-specific $\lambda_{s,t}$ parameters to the set of $n$ times and locations sampled.  The process model that we consider in this case ($[\boldsymbol{\lambda} | \boldsymbol{\theta},{\bf x}]$) is Dirichlet, however; namely
+${\bf C} \sim \text{Poisson}({\bf o} \bigodot {\bf H}\boldsymbol{\lambda})$, where the matrix ${\bf H}$ maps the full set site and time-specific $\lambda_{s,t}$ parameters to the set of $n$ times and locations sampled, and ${\bf o}$ specifies an offset (e.g., referencing the proportion of each grid cell sampled in the case of equal sized sampling units).  The process model that we consider in this case ($[\boldsymbol{\lambda} | \boldsymbol{\theta},{\bf x}]$) is Dirichlet, however; namely
 \begin{eqnarray}
    \boldsymbol{\lambda}_t & = & \lambda \boldsymbol{\pi}_t \text{, where} \\
    \boldsymbol{\pi}_t & \sim & \text{Dirichlet}({\bf X}_t \beta + \boldsymbol{\kappa}_t).
@@ -305,14 +301,9 @@ The OP model used the RS2 structure to generate data, but on a larger grid (i.e.
 \section{Example: Spotted seals in the Bering Sea}
 
 We demonstrate the utility of spatio-temporal models for estimating abundance from transect data by analyzing
-count data from spotted seals obtained from aerial transects over the Bering Sea during April and May of 2012.  Conducted by the U.S. National Marine Fisheries Service, these surveys used thermal imagery to locate seals on ice; examination of simultaneous high resolution digital photographs provided information on species composition \citep[for detailed information on survey methods, see][]{ConnEtAl2014}.  In practice, a variety of observation errors (including incomplete detection) occur with such data, but for clarity we omit these details in subsequent modelling (see {\it Discussion} for further consideration of observation error).
-
+count data from spotted seals obtained from aerial transects over the Bering Sea during April and May of 2012.  Conducted by the U.S. National Marine Fisheries Service, these surveys used thermal imagery to locate seals on ice; examination of simultaneous high resolution digital photographs provided information on species composition \citep[for detailed information on survey methods, see][]{ConnEtAl2014}.  In practice, a variety of observation errors (including incomplete detection) occur with such data.  However, since our main focus is on studying the behavior of different types of spatio-temporal process models, we treat counts as if they are observed perfectly in subsequent modeling (see {\it Discussion} for further consideration of observation error).
 
 Spotted seals are dependent upon sea ice for breeding, molting, pupping, and rest. Previous analyses of Bering sea transect counts  \citep[e.g.]{ConnEtAl2014,VerHoefEtAl2014} indicated spotted seal abundance is maximized in sample units with sea ice proportions in the 0.5-0.8 range and near the southern ice edge.
-
-obtained seal count data for transects flown over the Bering Sea in April and May of 2012 from the
-N
-
 
 justify 3-sample unit availability 'limit'
 
@@ -324,11 +315,13 @@ of different types of spatio-temporal models (e.g. descriptive versus dynamical)
 
 This is not to say that our analysis was not useful from a practical standpoint, particularly with regard to ice-associated seals in the Bering Sea....
 
-For clarity of presentation, we did not attempt to fully model observation errors that are present in the seal transect data.  For instance, the count data do not account for all seals because some seals are not available to be detected (i.e., are in the water), thermal imagery misses some seals, and there is some species misclassification. As such, spatio-temporal estimates presented in this paper are for demonstration only, as they do not reflect animals unavailable for sampling. \citet{ConnEtAl2014} developed observation models to account for these types of detection errors (though computational demands are considerable).  Integrating these observation models with spatio-temporal process models is needed to produce absolute abundance estimates with realistic measures of precision, and is a subject of current research.
+For clarity of presentation, we did not attempt to fully model observation errors that are present in the seal transect data.  For instance, the count data do not account for all seals because some seals are not available to be detected (i.e., are in the water), thermal imagery misses some seals, and there is some species misclassification. As such, spatio-temporal estimates presented in this paper are for demonstration only, as they do not reflect animals unavailable for sampling. \citet{ConnEtAl2014} developed observation models to account for these types of detection errors, where the offset term (${\bf o}$ in eqn \ref{eq:basic-mod}) was used to handle differences in grid cell size and detection probabilities that are less than one.  However, inclusion of species misclassification is more involved and computational demands are considerably greater.  Integrating such observation models with spatio-temporal process models is a subject of current research, and is ultimately what will be needed to produce absolute abundance estimates with realistic measures of precision.
 
 further boundary condition discussion
 
-resource selection approach largely anticipated by work on agent-based dynamical space time models  \citep{HootenWikle2010}; recently implemented in spatial capture-recapture \citep{RoyleEtAl2013}
+\citet{ChandlerEtAl2011} proposed a class of models for estimating animal density from repeated plot-based samples that allowed the number of animals observed on a study area to change over time; however, their approach assumes that animals are associated with a given study area throughout the study, and that temporary emigration out of the study area is responsible for variation in counts.  As such, their approach is more useful when animals are associated with specific home ranges, as opposed to the case we consider here, where habitat itself can be dynamic and where animals can move across the landscape.
+
+resource selection approach largely anticipated by work on agent-based dynamical space time models  \citep{HootenWikle2010}; recently implemented in spatial capture-recapture \citep{RoyleEtAl2013}... Note that \citet{VerHoefJansen2007} considered a additive space-time descriptive model for harbor seal counts, but also included zero inflation.
 
 One could consider alternative formulations for $\boldsymbol{\varphi}$ that allow for anisotropy (via positive covariance), as well as models where diffusivity of animals through their habitats varies over space and/or time \citep[see e.g.][]{WikleEtAl2001}.  However, these features may require richer datasets than are typical in transect surveys of animal populations.
 
