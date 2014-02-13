@@ -29,7 +29,7 @@ T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
 \papertype{Article}
 
-\title{Using spatio-temporal models to infer ecological dynamics and estimate animal abundance from transect counts} %\footnotemark[2]}
+\title{Using spatio-temporal statistical models to estimate animal abundance and infer ecological dynamics from count data} %\footnotemark[2]}
 
 \author{P.~B. ~Conn\affil{1}\corrauth, D.~S. ~Johnson\affil{1}, J.~M. ~Ver Hoef\affil{1}, M.~B. ~Hooten\affil{2}\affil{3}\affil{4},  J. ~M. ~London\affil{1}, P. ~L. ~Boveng\affil{1}}
 
@@ -42,7 +42,7 @@ T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
  %\noindent {\emph{Summary}}
 \small
 \begin{enumerate}
-\item  Ecologists often estimate animal abundance using models fit to transect survey count data. Such models often require that animal density remains constant across the landscape where sampling is being conducted.  This assumption is problematic for animals inhabiting dynamic landscapes or otherwise exhibiting considerable spatio-temporal variation in density, and may be an impediment to inference about how changes in environmental conditions affect animals' spatial distribution.  A variety of models have been developed for analyzing spatio-temporal variation in count data, but there has been little comparison of the efficacy of alternative modeling approaches for estimating animal abundance.
+\item  Ecologists often estimate animal abundance using models fit to survey counts. Such models often require that animal density remains constant across the landscape where sampling is being conducted.  This assumption is problematic for animals inhabiting dynamic landscapes or otherwise exhibiting considerable spatio-temporal variation in density, and may be an impediment to inference about how changes in environmental conditions affect animals' spatial distribution.  A variety of models have been developed for analyzing spatio-temporal variation in count data, but there has been little comparison of the efficacy of alternative modeling approaches when the goal is to estimate animal abundance or examine species-habitat relationships.
 
 \item We review several concepts from the burgeoning literature on spatio-temporal statistical models, including the nature of the temporal structure (i.e., descriptive or dynamical) and strategies for dimension reduction to promote computational tractability.  We also review several features as they specifically relate to abundance estimation, including boundary conditions, population closure, choice of link function, and extrapolation of predicted relationships to unsampled areas.
 
@@ -182,28 +182,32 @@ temporal structure (i.e., omitting space-time interactions).  To induce this str
 The implication of this additive construction is that the temporal random effect $\gamma_t$ is uniformly applied to each sample unit; if habitat covariates were to remain constant, non-zero $\gamma_t$ effects would lead to uniform expected increases or decreases in log abundance across the entire landscape (as opposed to redistribution of abundance).
 
 We model spatial structure by distributing knots across the landscape and imposing a process convolution model for $\eta_s$ as in eqn. \ref{eq:reduced-spat}.  In this case, the random spatial effects, $\boldsymbol{\alpha}$, represent weights associated with each knot locations, and are given independent Gaussian prior distributions.
-For $\gamma_t$, we specify an RW2 ICAR prior distribution, which is a second-order Markov random walk time series process \citep{RueHeld2005}.  This formulation imposes a smoother temporal trend in latent log abundance than would a first-order Markov random walk (or RW1) process.  We describe a Bayesian implementation of this model in Appendix S1
+For $\gamma_t$, we specify an RW2-ICAR prior distribution, which is a second-order Markov random walk time series process \citep{RueHeld2005}.  This formulation imposes a smoother temporal trend in latent log abundance than would a first-order Markov random walk (or RW1) process.  We describe a Bayesian implementation of this model in Appendix S1.
 
 \subsection{A spatio-temporal process convolution (STPC) model}
-We
+
+The next model we implemented shares many similarities with the AST model, but allows for spatio-temporal interactions.  We start
+with the same general structure and observation model as before (i.e. as given by eqns. \ref{eq:basic-mod} \& \ref{eq:hmod}).  However, in this case we write log of abundance intensity as a function of a single spatio-temporal
+effect, $\kappa_{s,t}$:
 \begin{eqnarray*}
-  \mu_{s,t} & = & {\bf X}_{s,t} \boldsymbol{\beta} + \kappa_{s,t} + \epsilon_{s,t} \\
-  \kappa_{s,t} & = & {\bf K} \boldsymbol{\alpha}_t \\
-  \alpha_{mt} & = &  \begin{cases}
-                    \sigma_\alpha Z_{\alpha,m,t} & \text{if }t=1 \\
-                    \phi_\alpha \alpha_{m,t-1} + \sigma_\alpha Z_{\alpha,m,t} & \text{if }t>1.
-                  \end{cases}
+  \boldsymbol{\mu} & = & {\bf X} \boldsymbol{\beta} + \boldsymbol{\kappa} + \boldsymbol{\epsilon}_t.
 \end{eqnarray*}
-So basically a spatial convolution where weights associated with each of the knots evolves in time according to an AR1 process... inspired by \citet{CalderEtAl2002,Higdon2002}.  Other suggestions?
+We will write the $\boldsymbol{\kappa}$ as a function of spatio-temporal parameters on a reduced dimensional space associated with $m$ knots placed evenly across the landscape, writing
+\begin{eqnarray*}
+  \boldsymbol{\kappa} = {\bf L} \boldsymbol{\alpha}.
+\end{eqnarray*}
+Using this setup, there are a total of $mT$ $\alpha_{k,t}$ parameters (one for each knot and time step), and ${\bf L}$ is an $(mT \times mT)$ block-diagonal matrix, composed of $T$ copies of the ${\bf K}$ matrix from the previous section.  We allow the
+$\alpha_{k,t}$ parameters to change smoothly over time by imposing an RW2-ICAR distribution on $\{ \alpha_{k,1}, \alpha_{k,2} \hdots \alpha_{k,T} \}$ for each knot $k$.
+This is a conceptually similar approach to that used by \citet{CalderEtAl2002} to describe space-time structure in ozone concentration, and is described further in Appendix S1.  
 
 \subsection{Resource selection models}
 
 We implemented two novel dynamical spatio-temporal models that incorporate resource selection.  The approaches varied by choice of link function and the amount of stochasticity, but the rationale between both approaches was the same: if the quantity and quality of available habitat changes over time, animals should be able to select areas of higher quality, subject to movement constraints.
-    In both cases, we follow the general structure for dynamical models for $\mu_{s,t}$ presented earlier (i.e. eqn \ref{eq:mu}) and model latent abundance at the beginning of the study using a descriptive formulation:
+In both cases, we follow the general structure for dynamical models for $\mu_{s,t}$ presented in eqn \ref{eq:mu} (with a subtle modification to improve computational tractability; see Appendix S1) and model latent abundance at the beginning of the study using a descriptive formulation:
 \begin{eqnarray*}
   \boldsymbol{\mu}_{1} & = & {\bf X}_{1} \boldsymbol{\beta}_1 + \boldsymbol{\eta} + \boldsymbol{\epsilon}_1,
 \end{eqnarray*}
-where $\boldsymbol{\eta}$ are given a RSR-ICAR prior distribution and the `1' subscript indicates covariates and parameters specific to the first time step of the study.  For future time steps, we let latent abundance redistribute itself according to the weighted distribution commonly used in resource selection applications \citep[cf.][]{PatilRao1978,LeleKeim2006}.  In typical resource selection studies employing use-availability designs, ecologists are interested in explaining variation in an animal's use of spatial locations relative to the set of spatial locations that were available to them.  In a discrete-space use-availability setting, use of the weighted distribution implies that the probability of transitioning from sampling unit $a \in S$ at time $t-1$ to sampling unit $b \in S$ at $t$ is
+where $\boldsymbol{\eta}$ are modeled using a process convolution formulation as in the AST model and the `1' subscript indicates covariates and parameters specific to the first time step of the study.  For future time steps, we let latent abundance redistribute itself according to the weighted distribution commonly used in resource selection applications \citep[cf.][]{PatilRao1978,LeleKeim2006}.  In typical resource selection studies employing use-availability designs, ecologists are interested in explaining variation in an animal's use of spatial locations relative to the set of spatial locations that were available to them.  In a discrete-space use-availability setting, use of the weighted distribution implies that the probability of transitioning from sampling unit $a \in S$ at time $t-1$ to sampling unit $b \in S$ at $t$ is
 \begin{eqnarray}
   \psi^{ab}_t & = & \frac{w_{b,t} \varphi_{a,b}}{\sum_s w_{s,t} \varphi_{a,s}}. \label{eq:psi}
 \end{eqnarray}
@@ -234,29 +238,36 @@ while in the second
 \begin{eqnarray*}
   \exp(\boldsymbol{\mu}_t) & = & {\bf M}_t \exp(\boldsymbol{\mu}_{t-1}). %\label{eq:exp-mu}
 \end{eqnarray*}
-These models, which we will refer to as RS1 and RS2, respectively, differ in two important ways.  First, since $\mu_{s,t}$ is modeled in log space (see e.g. eqn \ref{eq:basic-mod}), the RS1 specification means that transitions are specified relative to the natural logarithm of abundance intensity, whereas for RS2 abundance intensity is modeled on the real scale.  We cannot include Gaussian error ($\epsilon_{s,t}$) in RS2, as abundance intensity has to be strictly positive; as such the second model is essentially deterministic.  However, the second formulation induces a ``conservation of mass" property, whereby the expected value for abundance is constant over time (i.e. $\text{E}(N_t) = \text{E}(N_{t+1}) \forall t$); this is not strictly possible with RS1 (see {\it Demographic closure and choice of link function}).  However, we can attempt to compensate for the artifactual effects of range contraction and expansion on modeled abundance in RW1 by including a time-specific random effect, $\gamma_t$, which we model using an AR(1) formulation.
+These models, which we will refer to as OPRS and CPRS (corresponding to open population and closed population resource selection, respectively,) differ in two important ways.  First, since $\mu_{s,t}$ is modeled in log space (see e.g. eqn \ref{eq:basic-mod}), the OPRS specification means that transitions are specified relative to the natural logarithm of abundance intensity, whereas for CPRS abundance intensity is modeled on the real scale.  We cannot include Gaussian error ($\epsilon_{s,t}$) in CPRS, as abundance intensity has to be strictly positive; as such the second model is essentially deterministic.  However, the second formulation induces a ``conservation of mass" property, whereby the expected value for abundance is constant over time (i.e. $\text{E}(N_t) = \text{E}(N_{t+1}) \forall t$); this is not strictly possible with OPRS (see {\it Demographic closure and choice of link function}).  However, we can attempt to compensate for the artifactual effects of range contraction and expansion on modeled abundance in RW1 by including a time-specific random effect, $\gamma_t$, which we model using an AR(1) formulation.
 
-For both RS1 and RS2, the matrix ${\bf M}_t$ is constructed using values of $\psi_t^{ab}$ in a computationally efficient framework.  In particular,
-\begin{eqnarray}
-  {\bf M}_t & = & ({\bf D}_t^{-1} \boldsymbol{\varphi}_t {\bf I}_{w_t})^\prime, \label{eq:M}
-\end{eqnarray}
-where the $\prime$ symbol denotes the matrix transpose operator, each row $a$ of the $S \times S$ matrix $\boldsymbol{\varphi}_t$ holds entries corresponding to $\psi_t^{ab}$ ($b \in \{ 1,2,\hdots,S \}$), and ${\bf I}_{w_t}$ is a diagonal matrix with elements ${\bf w}_t$ along the main diagonal.  The  ${\bf D}_t$ matrix provides normalization (i.e. so all rows of ${\bf M}_t$ sum to one), and is calculated as ${\bf D}_t = \boldsymbol{\varphi}_t {\bf I}_{w_t} {\bf 1}$, where ${\bf 1}$ is an $(S \times 1)$ vector with each element equal to 1.0.
 
-\subsection{Closed population ideal free (CPIF) model}
+\subsection{A closed population ideal free (CPIF) model}
 
-The RS2 implementation provides a possible approach for implementing a pseudo-closure assumption, but may be too limiting when animal dispersal is either leptokurtic or ``fast" in relation to the time step of the model.  As another approach for constraining expected abundance to be constant over time, we consider a closed population
+The CPRS implementation provides a possible approach for implementing a pseudo-closure assumption, but may be too limiting when animal dispersal is either leptokurtic or ``fast" in relation to the time step of the model.  As another approach for constraining expected abundance to be constant over time, we consider a closed population
 ideal free model where abundance is reallocated to sample units at each time step proportionally to habitat suitability.  In this case, we depart from the general formulation of eqn \ref{eq:hmod} followed up to this point.  Instead, we consider the model
 \begin{eqnarray}
-  [\boldsymbol{\pi},\boldsymbol{\theta} | {\bf x},{\bf C},{\bf o}] & \propto & [{\bf C} | {\bf o}, \boldsymbol{\lambda}] [\boldsymbol{\lambda} | \boldsymbol{\theta},{\bf x}] [\theta].
+  [N, N_{s,t}, \boldsymbol{\omega},\boldsymbol{\theta} | {\bf x},{\bf C},{\bf o},{\bf p}] & \propto & [{\bf C} | N_{s,t}, {\bf o}, \boldsymbol{\omega}] [\boldsymbol{\omega} | \boldsymbol{\theta},{\bf x},{\bf o}] [N_{s,t}|N,\omega] [\theta].
   \label{eq:cpif-post}
 \end{eqnarray}
-In this case, we still consider a Poisson observation model $[{\bf C} | {\bf o}, \boldsymbol{\lambda}]$, such that
-${\bf C} \sim \text{Poisson}({\bf o} \bigodot {\bf H}\boldsymbol{\lambda})$, where the matrix ${\bf H}$ maps the full set site and time-specific $\lambda_{s,t}$ parameters to the set of $n$ times and locations sampled, and ${\bf o}$ specifies an offset (e.g., referencing the proportion of each grid cell sampled in the case of equal sized sampling units).  The process model that we consider in this case ($[\boldsymbol{\lambda} | \boldsymbol{\theta},{\bf x}]$) is Dirichlet, however; namely
-\begin{eqnarray}
-   \boldsymbol{\lambda}_t & = & \lambda \boldsymbol{\pi}_t \text{, where} \\
-   \boldsymbol{\pi}_t & \sim & \text{Dirichlet}({\bf X}_t \beta + \boldsymbol{\kappa}_t).
-\end{eqnarray}
-As in the spatio-temporal process convolution model, we include temporally-evolving spatio-temporal random effects $\boldsymbol{\kappa}_t$ by convolving bivariate normal kernels where the kernel weights change according to an AR(1) process.
+In particular, we model the counts ${\bf C}$ as arising from a binomial sampling process, where
+\begin{eqnarray*}
+  C_{s,t} & \sim & \textrm{binomial}(N_{s,t}; p_{st}),
+\end{eqnarray*}
+where $p_{st}$ is the fraction of the sampling unit $s$ that is surveyed at time $t$ and ia assumed known (see Discussion for possible adaptations to modify $p_{st}$ for incomplete detection).
+We model abundance in each sampling unit $s$ at time $t$, $N_{s,t}$ as
+\begin{eqnarray*}
+  N_{s,t} & \sim & \textrm{multinomial}(N; \boldsymbol{\pi}),
+\end{eqnarray*}
+where
+\begin{eqnarray*}
+  \pi_{i,t} & = & \frac{\exp(\omega_{i,t})}{\sum_s \exp(\omega{s,t})}.
+\end{eqnarray*}
+We express habitat preference ($\omega_{s,t}$) values using a log-linear formulation that includes spatio-temporal autocorrelation:
+\begin{eqnarray*}
+  \boldsymbol{\omega_t} & = & {\bf o} + {\bf X}_t \boldsymbol{\beta} + \boldsymbol{\kappa}_t + \boldsymbol{\epsilon_t}.
+\end{eqnarray*}
+Here, ${\bf o}$ denote offsets accounting for possible differences in the size of sample units; by convention we do not include an intercept in the regression part of the model as it is not identifiable.
+As in the spatio-temporal process convolution model, we include temporally-evolving spatio-temporal random effects $\boldsymbol{\kappa}_t$ by convolving bivariate normal kernels where the kernel weights change according to an RW2-ICAR process.
 
 \section{Computing}
 
@@ -272,7 +283,7 @@ In order to examine the utility of each of our proposed modeling approaches, we 
  \item simulating spatio-temporal animal abundance intensity across the simulated landscape according to the assumed data generating structure,
  \item simulating transect placement across each landscape,
  \item simulating transect counts according to the level of overdispersion, and
- \item conducting Bayesian inference with each of our estimation models (SST,STPC,RS1,RS2,CPIF).
+ \item conducting Bayesian inference with each of our estimation models (SST,STPC,OPRS,CPRS,CPIF).
 \end{enumerate}
 We repeated each of these steps 100 times, using a $40 \times 40$ grid for generating habitat configuration, and
 a $30 \times 30$ grid (centered in the middle of the $40 \times 40$ grid) for simulating transect surveys and performing estimation (one of our abundance generating models required a larger grid for simulating spatio-temporal animal abundance; see below).  We now describe each of the enumerated steps in turn.
@@ -285,11 +296,11 @@ a $30 \times 30$ grid (centered in the middle of the $40 \times 40$ grid) for si
 
 We used three different models to generate spatio-temporal count data from simulated transect surveys.  These included
 \begin{enumerate}
-   \item  A closed population model with restricted dispersal, using the previously defined RS2 structure,
+   \item  A closed population model with restricted dispersal, using the previously defined CPRS structure,
    \item A closed population model with unlimited dispersal, using the previously defined CPIF structure, and
    \item An open population with restricted dispersal (OP).
 \end{enumerate}
-The OP model used the RS2 structure to generate data, but on a larger grid (i.e. $40 \times 40$) grid than was used for analysis (i.e. $30 \times 30$).
+The OP model used the CPRS structure to generate data, but on a larger grid (i.e. $40 \times 40$) grid than was used for analysis (i.e. $30 \times 30$).
 
 \subsubsection{Simulating transect surveys}
 

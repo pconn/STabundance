@@ -48,7 +48,6 @@ Dist.pdf=dnorm(Distances,0,sigma.rk)
 One=rep(1,S)
 srr.cov=FALSE #if true, add spatially correlated noise to resource selection process
 Q.cov=Matrix(10*Q) #add some spatially correlated noise to resource selection process
-#simulate movement assuming an overdispersed multinomial distribution
 for(it in 2:t.steps){
   X=Data$Grid[[it]]@data[,c(5,7,4)]  #initial design matrix has ice concentration, distance from edge, dist from shelf
   if(length(which(X[,1]<0))>0)X[which(X[,1]<0),1]=0

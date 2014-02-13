@@ -30,7 +30,7 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
   if(!(sim.type %in% c("RS2closed","RS2open","CPIF")))cat("error in sim_data_generic; sim.type not recognized")
   
   
-  sim.type="CPIF"
+  #sim.type="CPIF"
   x.len=sqrt(S)
   x.len2=x.len+10
   S2=x.len2^2
@@ -77,7 +77,7 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
   rho.ar1=0.8
   #sig.ar1=(1-rho.ar1)/tau.cov #to make initial variance approx equal to subsequent variance
   sig.ar1=0.6 #to make initial variance approx equal to subsequent variance
-  beta0=log(0.3) #-0.5/tau.cov  #lognormal bias correction
+  beta0=log(0.6) 
   beta1=log(1+delta)  
   
   #Define knot centers for evolution of habitat covariate using 8 by 8 grid over the larger 40 by 40 grid
@@ -106,8 +106,11 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
   #future log kernel weights are set via a random walk process
   for(it in 2:t.steps)Alpha[,it]=rho.ar1*Alpha[,it-1]+rnorm(n.knots,0,sig.ar1)
   #Covariate values are obtained through process convolution
+  #Data$Grid[[1]]@data[,1]=exp(beta0+K%*%Alpha[,1])
+  #cov.mult=1/max(Data$Grid[[1]]@data[,1])
+  cov.mult=1
   for(it in 1:t.steps){
-    Data$Grid[[it]]@data[,1]=exp(beta0+beta1*(it-1)+K%*%Alpha[,it])
+    Data$Grid[[it]]@data[,1]=cov.mult*(exp(beta0+beta1*(it-1)+K%*%Alpha[,it]))
     Data$Grid[[it]]@data[,2]=(Data$Grid[[it]]@data[,1])^2
   }
   #plot_N_map(1,as.matrix(Data$Grid[[1]]@data[,1],ncol=1),Grid=Data$Grid,leg.title="Covariate")
@@ -151,12 +154,12 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
   
   #now evolve spatial process depending on simulation type
   if(sim.type %in% c("RS2closed","RS2open")){
-    Sim.pars=list(Hab.init=c(-1.5,20,-13),Hab.evol=c(-1.5,20,-13),tau.eta=10,kern.sd=2,tau.epsilon=20)
+    Sim.pars=list(Hab.init=c(-1.5,10,-10),Hab.evol=c(-1.5,10,-10),tau.eta=10,kern.sd=2,tau.epsilon=20)
     Lambda=sim_RS2(S=Cur.S,Data=Data,Sim.pars=Sim.pars,hab.formula=hab.formula)
   }
   K.cpif=K[Which.include,]
   if(sim.type=="CPIF"){
-    Sim.pars=list(Hab=c(-1.5,20,-13),lambda=70000,tau.eta=20,rho.ar1=0.5,sig.ar1=0.1,tau.epsilon=20)
+    Sim.pars=list(Hab=c(-1.5,10,-10),lambda=70000,tau.eta=20,rho.ar1=0.5,sig.ar1=0.1,tau.epsilon=20)
     Lambda=sim_CPIF(S=Cur.S,Data=Data,Sim.pars=Sim.pars,hab.formula=hab.formula,Q.knot=Q.knot,K.cpif=K.cpif)
   }
   

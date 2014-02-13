@@ -1,4 +1,4 @@
-#' function to perform Bayesian analysis of count data using a separable spatio-temporal log Gaussian Cox process model
+#' function to perform Bayesian analysis of count data using an additive spatio-temporal log Gaussian Cox process model
 #' @param model A formula object specifying the linear predictor for abundance intensity
 #' @param Data   A list holding the following objects:
 #'        Adj - Adjacency matrix of ones and zeros describing spatial connectivity (for ICAR modeling)
@@ -21,8 +21,6 @@
 #'  "beta.tau" precision for Gaussian prior on regression parameters (default 0.1)
 #'  "a.eps" alpha parameter for tau_epsilon~Gamma(alpha,beta) (default = 1.0)
 #'  "b.eps" beta parameter for tau_epsilon~Gamma(alpha,beta) (default = 0.01)
-#'  "a.eta" alpha param for gamma prior precision of spatio-temporal model
-#'  "b.eta" beta param for gamma prior precision of spatio-temporal process
 #'   If provided, all values for Prior.pars need to be specified
 #' @return returns a list with the following objecs: 
 #' 	MCMC: A list object containing posterior samples;
@@ -35,8 +33,7 @@
 #' @examples print("Later!")
 
 
-mcmc_STPC<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
-  source('c:/users/paul.conn/git/STabundance/STabundance/R/util_funcs.R')
+mcmc_AST<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
   require(Matrix)
   require(mvtnorm)
   
@@ -48,8 +45,9 @@ mcmc_STPC<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
                     a.eps=1,
                     b.eps=0.01,
                     a.eta=1,
-                    b.eta=0.01
-    )
+                    b.eta=0.01,
+                    a.gamma=1,
+                    b.gamma=0.01)
   }
   if(is.null(Area.adjust))Area.adjust=rep(1,S)
 
@@ -75,7 +73,7 @@ mcmc_STPC<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
   Sites.no.obs=All.sites[Which.no.obs]
   X.obs=matrix(X.pred[Which.obs,],n.obs,n.beta)
   n.no=length(Which.no.obs)
-  X.no.obs=matrix(X.pred[Which.no.obs,],n.no,n.beta)
+  X.no.obs=matrix(X.pred[Which.no.obs,],n.obs,n.beta)
   XpXinv=solve(crossprod(X.obs))
   XpXinvXp=XpXinv%*%t(X.obs)
     
@@ -99,58 +97,82 @@ mcmc_STPC<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
   Beta.mc=matrix(0,n.beta,mcmc.length)
   tau.epsilon=runif(1,10,100)
   tau.eta=runif(1,10,100)
+  tau.gamma=runif(1,10,100)
   Tau.epsilon.mc=rep(0,mcmc.length)
   Tau.eta.mc=Tau.epsilon.mc
+  Tau.gamma.mc=Tau.epsilon.mc
   Pred.mc=array(0,dim=c(S,t.steps,mcmc.length))
   Accept=rep(0,ncol(Data$Count.data))
   Accept.old=Accept
   
-  #setup process conv/RW2 space-time model
-  Q1=linear_adj_RW2(t.steps) #precision matrix
-  Q=Q1
+  #setup RW2 time series model
+  QT=linear_adj_RW2(t.steps)  #precision matrix
+  QT.t=t(QT)
+  Tmp.dat=Data$Count.data
+  Tmp.dat[,"Time"]=as.factor(Tmp.dat[,"Time"])
+  XT=model.matrix(~0+Time,data=Tmp.dat)
+  XT.t=t(XT)
+  cross.XT=crossprod(XT,XT)
+  X.trend=matrix(1,t.steps,2)
+  X.trend[,2]=c(1:t.steps)
+  A=Matrix(solve(crossprod(X.trend,X.trend),t(X.trend)))  #for resolving identifiability - see e.g. eqn 2.30 of Rue and Held
+  A.t=t(A)
+  n.gamma.ts=t.steps-2 #2 less effective re's due to RW2 model  
+  Gamma<-rrw(tau.gamma*QT)
+  I.T=diag(t.steps)
+  
+  #setup process conv model for spatial effects
+  #initial log kernel weights are set via an ICAR(10) prcoess
   n.knots=ncol(Data$K)
-  K=Data$K
-  for(i in 2:n.knots)Q=bdiag(Q,Q1)  #precision matrix a block diagonal matrix
-  for(i in 2:t.steps)K=bdiag(K,Data$K) 
-  Q.t=t(Q)
-  Alpha=rrw(tau.eta*Q) #initial values for space-time random effects
-  Eta=K%*%Alpha
-  K.obs=K[Which.obs,]
+  Alpha=rnorm(n.knots,0,sqrt(1/tau.eta)) #initial kernel weights/random effects
+  Eta=Data$K%*%Alpha
+  K.obs=Data$K[Data$Count.data[,"Cell"],]
   K.obs.t=t(K.obs)
   cross.K<-crossprod(K.obs,K.obs)
+  I.knot=diag(n.knots)
   
   for(iiter in 1:Control$iter){
     if(iiter%%1000==0)cat(paste('iteration ',iiter,' of ',Control$iter,'\n'))
     #update mu (sampled cells)
-    Mu.pred=X.obs%*%Beta+Eta[Which.obs]
+    Mu.pred=X.obs%*%Beta+Eta[Data$Count.data[,"Cell"]]+Gamma[Data$Count.data[,"Time"]]
     sd=sqrt(1/tau.epsilon)
     full.cond.old=dnorm(Mu[Which.obs],Mu.pred,sd,log=1)+dpois(Data$Count.data[,"Count"],exp(Log.offset+Mu[Which.obs]),log=1)
-    Prop=Mu[Which.obs]+runif(n.obs,-Control$MH.mu,Control$MH.mu)
+    Prop=Mu[Which.obs]+rnorm(n.obs,0,Control$MH.mu)
     full.cond.new=dnorm(Prop,Mu.pred,sd,log=1)+dpois(Data$Count.data[,"Count"],exp(Log.offset+Prop),log=1)
     I.accept=(runif(n.obs)<exp(full.cond.new-full.cond.old))
     Mu[Which.obs[I.accept==1]]=Prop[I.accept==1]
     Accept=Accept+I.accept
     
     #update beta
-    Beta=t(rmvnorm(1,XpXinvXp%*%(Mu[Which.obs]-Eta[Which.obs]),XpXinv/(tau.epsilon+Prior.pars$beta.tau)))
+    Beta=t(rmvnorm(1,XpXinvXp%*%(Mu[Which.obs]-Eta[Data$Count.data[,"Cell"]]-Gamma[Data$Count.data[,"Time"]]),XpXinv/(tau.epsilon+Prior.pars$beta.tau)))
     
     #update precision for exchangeable errors
     if(Control$fix.tau.epsilon==FALSE){
-      Mu.pred=X.obs%*%Beta+Eta[Which.obs]
+      Mu.pred=X.obs%*%Beta+Eta[Data$Count.data[,"Cell"]]+Gamma[Data$Count.data[,"Time"]]
       Diff=Mu[Which.obs]-Mu.pred
-      tau.epsilon <- rgamma(1,n.obs/2 + Prior.pars$a.eps, as.numeric(crossprod(Diff,Diff))*0.5 + Prior.pars$b.eps)
+      tau.epsilon <- rgamma(1,0.5*n.obs + Prior.pars$a.eps, as.numeric(crossprod(Diff,Diff))*0.5 + Prior.pars$b.eps)
     }
     
     #update kernel weights/REs for spatial model
-    Dat.minus.Exp=Mu[Which.obs]-X.obs%*%Beta
-    V.eta.inv <- cross.K*tau.epsilon+tau.eta*Q
+    Dat.minus.Exp=Mu[Which.obs]-X.obs%*%Beta-Gamma[Data$Count.data[,"Time"]]
+    V.eta.inv <- cross.K*tau.epsilon+tau.eta*I.knot
     M.eta <- solve(V.eta.inv,tau.epsilon*K.obs.t%*%Dat.minus.Exp)
-    Alpha <- M.eta + solve(Cholesky(V.eta.inv), rnorm(length(M.eta),0,1))
-    Alpha=Alpha-mean(Alpha)  #so intercept of fixed effects identifiable... note there's still implicit linear trend parameters for each alpha t-series
-    Eta=K%*%Alpha
+    Alpha <- M.eta + solve(chol(as.matrix(V.eta.inv)), rnorm(n.knots,0,1))
+    Eta=Data$K%*%Alpha
     #update tau.eta
-    tau.eta <- rgamma(1, length(M.eta)*0.5 + Prior.pars$a.eta, as.numeric(crossprod(Alpha,Q %*% Alpha)*0.5) + Prior.pars$b.eta)    
-        
+    tau.eta <- rgamma(1, n.knots*0.5 + Prior.pars$a.eta, as.numeric(crossprod(Alpha,Alpha)*0.5) + Prior.pars$b.eta)    
+    
+    #update REs, precision for time series RW2 ICAR model
+    Dat.minus.Exp=Mu[Which.obs]-X.obs%*%Beta-Eta[Data$Count.data[,"Cell"]]
+    V.gamma.inv <- tau.epsilon*cross.XT + tau.gamma*QT
+    M.eta <- solve(V.gamma.inv,tau.epsilon*XT.t%*%(Dat.minus.Exp))
+    Gamma <- M.eta + solve(chol(V.gamma.inv),rnorm(t.steps,0,1))
+    #center using eq 2.30 of Rue and Held
+    #Gamma <- Gamma - V.gamma.inv %*% A.t %*% solve(A %*% V.gamma.inv %*% A.t,A %*% Gamma)
+    Gamma=Gamma-mean(Gamma)  #just center first moment so no confounding with fixed effect intercept  
+    #update tau.gamma
+    tau.gamma <- rgamma(1,t.steps*0.5 + Prior.pars$a.gamma, as.numeric(crossprod(Gamma,QT %*% Gamma)*0.5) + Prior.pars$b.gamma)
+    
     #adapt proposal distributions if Control$adapt=TRUE
     if(Control$adapt==TRUE & iiter%%100==0){
       Diff=Accept-Accept.old
@@ -166,15 +188,16 @@ mcmc_STPC<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
       Beta.mc[,(iiter-Control$burnin)/Control$thin]=Beta
       Tau.epsilon.mc[(iiter-Control$burnin)/Control$thin]=tau.epsilon
       Tau.eta.mc[(iiter-Control$burnin)/Control$thin]=tau.eta
+      Tau.gamma.mc[(iiter-Control$burnin)/Control$thin]=tau.gamma
       if(Control$predict==TRUE){ #make predictions
         #simulate mu
-        Mu[Which.no.obs]=rnorm(n.no,X.no.obs%*%Beta+Eta[Which.no.obs],sqrt(1/tau.epsilon))
+        Mu[Which.no.obs]=rnorm(n.no,X.no.obs%*%Beta+Eta[Sites.no.obs]+Gamma[Times.no.obs],sqrt(1/tau.epsilon))
         #posterior predictions of abundance across landscape
         Pred.mc[,,(iiter-Control$burnin)/Control$thin]=rpois(S*t.steps,exp(Log.area.adjust+Mu))    
       }
     }
   } 
-  Out=list(MCMC=list(tau.eta=Tau.eta.mc,Beta=Beta.mc,tau.epsilon=Tau.epsilon.mc,Pred=Pred.mc),Accept=Accept,Control=Control)
+  Out=list(MCMC=list(tau.eta=Tau.eta.mc,tau.gamma=Tau.gamma.mc,Beta=Beta.mc,tau.epsilon=Tau.epsilon.mc,Pred=Pred.mc),Accept=Accept,Control=Control)
   Out
 }
 

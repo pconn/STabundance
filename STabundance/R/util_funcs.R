@@ -318,11 +318,24 @@ rrw <- function(Q){
   return(sim)
 }
 
-#' stack list of matrices into one big matrix
+#' stack list of vectors into one big vector
+#' @param L list vector of matrices
+#' @return X one vector consisting of stacked elements of L
+#' @export 
+#' @author Paul Conn \email{paul.conn@@noaa.gov}
+stack_list_vector<-function(L){
+  X=L[[1]]
+  len.L=length(L)
+  if(len.L>1){
+    for(ilen in 2:len.L)X=c(X,L[[ilen]])  #could be better optimized
+  }
+  X
+}
+
+#' stack list into matrix
 #' @param L list vector of matrices
 #' @return X one matrix consisting of stacked elements of L
 #' @export 
-#' @keywords logit, expit
 #' @author Paul Conn \email{paul.conn@@noaa.gov}
 stack_list<-function(L){
   X=L[[1]]
@@ -333,6 +346,50 @@ stack_list<-function(L){
   X
 }
 
+#' neg log likelihood function for generating initial estimates of Beta to start off Markov chain
+#' @param Beta parameter values
+#' @param Counts Animal counts in sampled cells
+#' @param P probability of seeing an animal by cell
+#' @param X model matrix
+#' @return multinomial log likelihood
+#' @export 
+#' @keywords multinomial, intial values, log likelihood
+#' @author Paul Conn \email{paul.conn@@noaa.gov}
+multinom_logL_inits<-function(Beta,Counts,P,X){
+  Cur.pi=P*exp(X%*%Beta)
+  Cur.pi=Cur.pi/sum(Cur.pi)
+  return(-dmultinom(Counts,prob=Cur.pi,log=TRUE))
+}
+
+#' Calculate partial derivative vector for for Langevin omega MH updates (for CPIF model)
+#' (Assuming function is called separately for each multinomial update)
+#' @param Omega Current values of Omega
+#' @param Counts Animal counts for current time step being updated
+#' @param Mu Expected value for Omega
+#' @param tau precision for exchangable errors
+#' @return Vector of partial derivates evaluated at Omega
+#' @export 
+#' @keywords logit, expit
+#' @author Paul Conn \email{paul.conn@@noaa.gov}
+d_logP_omega<-function(Omega,Counts,Mu,tau){
+  cur.sum=sum(exp(Omega))
+  return(Counts - (Omega-Mu)*tau - exp(Omega)/cur.sum)
+}
+
+#' Calculate partial derivative vector for for Langevin Z MH updates (for OPRS model)
+#' (Assuming function is called separately for each multinomial update)
+#' @param Z Current values of Z
+#' @param Log.offset The log of offset values (e.g. proportion of area surveyed)
+#' @param Counts Animal counts for current time step being updated
+#' @param Mu Expected value for Omega
+#' @param tau precision for exchangable errors
+#' @return Vector of partial derivates evaluated at Omega
+#' @export 
+#' @keywords logit, expit
+#' @author Paul Conn \email{paul.conn@@noaa.gov}
+d_logP_Z<-function(Z,Log.offset,Counts,Mu,tau){
+  return(Counts - exp(Log.offset+Z) - (Z-Mu)*tau)
+}
 
 #' inverse logit transformation
 #' @param x quantity to be transformed
