@@ -173,7 +173,7 @@ The full conditional for temporal random effects is also available in closed for
 \end{equation*}
 and can be simulated directly.  The variance-covariance matrix $v_{\gamma}$ can be written as
 \begin{equation*}
-  {\bf v}_{\gamma} = (\tau_\epsilon {\bf Z}^\prime {\bf Z} + \tau_\gamma){\bf Q})^{-1},
+  {\bf v}_{\gamma} = (\tau_\epsilon {\bf Z}^\prime {\bf Z} + \tau_\gamma{\bf Q})^{-1},
 \end{equation*}
 where ${\bf Z}$ is an $(n \times T)$ design matrix linking each observed count with an associated time step (thus the elements of {\bf Z}, $z_{ij}$, are 1.0 if observation $i$ was obtained at time step $j$ and zero otherwise), and where ${\bf Q}$ is the structure matrix for an RW2 intrinsic GMRF \citep[see][section 3.4]{RueHeld2005}.  The mean of the full conditional is given by
 \begin{equation*}
@@ -192,7 +192,7 @@ The precision $\tau_\gamma$ is also available in closed form and can be simulate
 
 To predict animal abundance in locations and times that were not sampled, we first sampled $\boldsymbol{\mu}$ as
 \begin{equation*}
-  \boldsymbol{\mu} \sim \textrm{Normal}({\bf X} \boldsymbol{\beta} + \boldsymbol{\eta} + \boldsymbol{\gamma},\tau_\epsilon^{-0.5}),
+  \boldsymbol{\mu} \sim \textrm{Normal}({\bf X} \boldsymbol{\beta} + \boldsymbol{\eta} + \boldsymbol{\gamma},\tau_\epsilon^{-1}),
 \end{equation*}
 where the design matrix ${\bf X}$ and vectors $\boldsymbol{\mu}$, $\boldsymbol{\eta}$, and $\boldsymbol{\gamma}$ are in this case understood to be composed of unique times and sampling units which are not surveyed.
 Predictions of abundance across the grid can then be made using
@@ -302,8 +302,8 @@ where we use $\boldsymbol{\theta}$ to denote the set of parameters consisting of
 
 \hspace{.5in}To analyze the OPRS model, we need to assign prior distributions to several model parameters.  We selected the following priors for all analyses:
 \begin{eqnarray*}
-  \boldsymbol{\beta} & \textrm{Regression parameters} & {\rm MVN}({\bf 0},(\tau_\beta X^\prime X)^{-1}) \\
-  \tau_\epsilon, \tau_\eta, \tau_d  & \textrm{Gaussian precisions} & \textrm{Gamma}(1.0,0.01) \\
+  \beta_i & \textrm{Regression parameters} & \textrm{Normal}(0,100) \\
+  \tau_\epsilon, \tau_\eta, \tau_\gamma, \tau_d  & \textrm{Gaussian precisions} & \textrm{Gamma}(1.0,0.01) \\
   \sigma & \textrm{AR1 parameter} & \textrm{Uniform}(0.0,1.0)
    \label{eq:priors}
 \end{eqnarray*}
@@ -328,9 +328,8 @@ time step $t$ to simulate values of ${\bf Z}_t$ for which $s \in \mathcal{S}_t$.
 
 \underline{2. Updating $\boldsymbol{\mu}$}
 
-In order to update $\boldsymbol{\mu}$, we make use of the forward filtering, backward sampling algorithm \citep{CarterKohn1994,Fruhwirth1994} as articulated by \citep[][Section 8.3.2]{CressieWikle2011}.  This algorithm
-makes use of Kalman filtering/smoothing methodology, and is the primary reason we have introduced Gaussian error
-at two different levels of the model.  To make use of this algorithm, we first make several adjustments.  First, we write an expanded state vector as
+In order to update $\boldsymbol{\mu}$, we make use of a forward filtering, backward sampling algorithm formulated for state space time series models \citep{DurbinKoopman2002}.  This algorithm
+makes use of Kalman filtering/smoothing methodology, but works with ``disturbances" (the Gaussian errors) rather than the actual state and observation vectors to speed up computation.  This approach requires Gaussian errors on ``state" and ``observation" vectors.  To make use of this algorithm, we first make several adjustments.  First, we write an expanded state vector as
 \begin{eqnarray*}
   \boldsymbol{\Theta}_t = \left[  \begin{array}{c} \boldsymbol{\mu}_t \\ \gamma_t \end{array} \right],
 \end{eqnarray*}
@@ -339,36 +338,53 @@ and define an expanded transition matrix as
   \mathcal{M}_t = \left[  \begin{array}{cc} \bf{M}_t & {\bf 1} \\ {\bf 0} & \sigma \end{array} \right],
 \end{eqnarray*}
 where ${\bf 1}$ is a length $S$ column vector of ones, and ${\bf 0}$ is a length $S$ row vector of zeros.  This change of notation allows us to write system dynamics in terms of familiar Gaussian state and observation processes amenable to processing by the Kalman filter:
-\begin{eqnarray*}
-  \boldsymbol{\Theta}_t & = & \mathcal{M}_t \boldsymbol{\Theta}_{t-1} + \boldsymbol{\epsilon}_t \\
-  {\bf Z}_t & = & {\bf J} \boldsymbol{\Theta}_t + \boldsymbol{\varepsilon}_t.
-\end{eqnarray*}
-Here, the $S \times (S+1)$ dimensional matrix ${\bf J}$ maps $\boldsymbol{\Theta} \rightarrow {\bf Z}$ (i.e. since there is no $Z$ corresponding to $\gamma$).
+\begin{eqnarray}
+  \boldsymbol{\Theta}_t & = & \mathcal{M}_t \boldsymbol{\Theta}_{t-1} + {\bf E}_t,
+  \label{eq:state-eq}
+\end{eqnarray}
+\begin{eqnarray}
+  {\bf Z}_t & = & {\bf H}_t \boldsymbol{\Theta}_t + \boldsymbol{\varepsilon}_t.
+   \label{eq:obs-eq}
+\end{eqnarray}
+Here, the $S \times (S+1)$ dimensional matrix ${\bf H}_t$ maps $\boldsymbol{\Theta} \rightarrow {\bf Z}$, and $\bf{E}_t = [\boldsymbol{\epsilon}_t \delta_t]$,
+where $\delta_t \sim \textrm{Normal}(0,\tau_\gamma^{-1})$.
 Of course, we do not actually observe ${\bf Z}_t$ either, but can still use the Kalman filtering machinery to provide efficient MCMC updates.  To do so, we write the observation error covariance matrix (i.e. for $\boldsymbol{\varepsilon}_t$) as ${\bf R}_t = \tau_z^{-1} \mathcal{D}(S)$, where $\mathcal{D}(S)$ is an $(S \times S)$ identity matrix, and write the process error covariance matrix (i.e. for $\boldsymbol{\epsilon}_t$) as
 \begin{eqnarray*}
-  \bf{Q}_t = \left[  \begin{array}{cc} \tau_\epsilon^{-1} \mathcal{D}(S) & {\bf 0} \\ {\bf 0} & \tau_\gamma^{-1} \end{array} \right],
+  \bf{Q}_t = \left[  \begin{array}{cc} \tau_\epsilon^{-1} \mathcal{D}(S) & {\bf 0} \\ {\bf 0} & \tau_\gamma^{-1} \end{array} \right].
 \end{eqnarray*}
-and perform the following steps to update $\boldsymbol{\mu}_t$:
+We then use the following steps to update $\boldsymbol{\mu}_t$:
 \begin{enumerate}
-  \item Calculate the initial mean vector and covariance matrix of the filtering distribution as
-  $\boldsymbol{\mu}_{1|1} = {\bf X}_1 \boldsymbol{\beta} + \boldsymbol{\eta} $ and $\bf{P}_{1|1} = \bf{Q}_1$, respectively.
-  \item For $t \in \{ 2,3, \hdots,T \}$,
-    \begin{enumerate}
-      \item Calculate the mean vector and covariance matrix of the forecast distribution as
-        $\boldsymbol{\mu}_{t|t-1} = \mathcal{M}_t \boldsymbol{\mu}_{t-1|t-1}$ and ${\bf P}_{t|t-1} = {\bf Q}_t + \mathcal{M}_t {\bf P}_{t-1|t-1} \mathcal{M}_t^\prime$, respectively
-      \item Calculate the Kalman gain matrix as ${\bf G}_t={\bf P}_{t|t-1}{\bf J}^\prime({\bf J}{\bf P}_{t|t-1}{\bf J}^\prime+{\bf R}_t)^{-1}$
-      \item Obtain the filtering distribution mean vector and covariance matrices as $\boldsymbol{\mu}_{t|t} = \boldsymbol{\mu}_{t|t-1} + {\bf G}_t({\bf Z}_t-{\bf J}\boldsymbol{\mu}_{t|t-1})$ and ${\bf P}_{t|t} = ({\bf I}-{\bf G}_t {\bf J}){\bf P}_{t|t-1}$, respectively.
-    \end{enumerate}
-  \item Sample $\boldsymbol{\mu}_T \sim \textrm{MVN}(\boldsymbol{\mu}_{T|T},{\bf P}_{T|T})$
-  \item For $t \in \{ T-1, T-2, \hdots, 1 \}$, Sample $\boldsymbol{\mu}_t \sim \textrm{MVN}(\boldsymbol{\mu}_{t|t} + {\bf V}_t (\boldsymbol{\mu}_{t+1}-\boldsymbol{\mu}_{t+1|t}),{\bf P}_{t|t}-{\bf V}_t {\bf P}_{t+1|t} {\bf V}_t^\prime.)$, where ${\bf V}_t = {\bf P}_{t|t} \mathcal{M}_{t+1}^\prime {\bf P}_{t+1|t}^{-1}$.
+  \item Draw random vectors of the Gaussian disturbances, $\boldsymbol{\epsilon}^+$ and $\boldsymbol{\varepsilon}^+$ (the `+' denoting that these are a simulated draw).
+  \item Initialize the state vector $\boldsymbol{\Theta}_1^+$ using a $\textrm{Normal}({\bf X}_1 \boldsymbol{\beta} + \boldsymbol{\eta}, \tau_\epsilon^{-1})$ distribution for the first $S$ elements, and a $\textrm{Normal}(0,\tau_\gamma^{-1})$ distribution for the $(S+1)th$ element, use the vectors of $\boldsymbol{\epsilon}^+$ and $\boldsymbol{\varepsilon}^+$ together with the state and observation equations (i.e. eqns. \ref{eq:state-eq} \& \ref{eq:obs-eq}) to define simulated state and observation vectors $\boldsymbol{\Theta}^+$ and ${\bf Z}^+$.
+  \item Compute ${\bf Z}_t^* = {\bf Z}_t - {\bf Z}_t^+$, which we run through the Kalman filter using the following
+      forward equations:
+      \begin{eqnarray*}
+        {\bf P}_t & = & \mathcal{M}_t {\bf P}_{t-1} {\bf L}_{t-1}^\prime + {\bf Q} \\
+        {\bf L}_t & = & \mathcal{M}_{t+1} - {\bf G}_{t} {\bf H}_{t} \\
+        {\bf G}_t & = & \mathcal{M}_{t+1} {\bf P}_t {\bf H}_t^\prime {\bf F}^{-1} \\
+        {\bf F}_t & = & {\bf H}_t {\bf P}_t {\bf H}_t^\prime + {\bf R}_t \\
+        \boldsymbol{\nu}_t & = & {\bf Z}_t^* - {\bf H}_t {\bf A}_t \\
+        {\bf A}_t & = & \mathcal{M}_t {\bf A}_{t-1} + {\bf G}_{t-1} \boldsymbol{\nu}_{t-1}.
+      \end{eqnarray*}
+      Here, ${\bf A}_t = {\bf 0}$ indicates that ${\bf A}$ is initialized at $t=1$ to be an all zero vector of length $S+1$.
+  \item Compute vectors of smoothed disturbances at time $t$, ${\bf D}_t$ by setting ${\bf D}_T ={\bf 0}$, and moving backward by backward recursion:
+      \begin{eqnarray*}
+        {\bf D}_{t-1} & = & {\bf H}_t^\prime {\bf F}_t^{-1} \boldsymbol{\nu}_t + {\bf L}_t^\prime {\bf D}_t.
+      \end{eqnarray*}
+  \item Next, we generate smoothed mean residuals for the state vector, $\hat{\boldsymbol{\Theta}}_t^*$ using eqn 8. of \citet{DurbinKoopman2002} as
+      \begin{eqnarray*}
+        \hat{\boldsymbol{\Theta}}_1^* & = &  {\bf A}_1 + {\bf P}_1 ( {\bf H}_1^\prime {\bf F}_1^{-1} \boldsymbol{\nu}_1+{\bf L}_1^\prime {\bf D}_1), \text{ and} \\
+        \hat{\boldsymbol{\Theta}}_{t}^* & = & \mathcal{M}_{t} \hat{\boldsymbol{\Theta}}_{t-1}^* + {\bf Q} {\bf D}_{t-1}  \text{ for } t>1.
+      \end{eqnarray*}
+  \item A sample from the absolute state distribution at each time step is then calculated as $\tilde{\boldsymbol{\Theta}}_t = \hat{\boldsymbol{\Theta}}_{t}^* + \boldsymbol{\Theta}_t^+$.
 \end{enumerate}
 
 
-\underline{3. Updating $\boldsymbol{\beta}$}
+\underline{3. Updating $\beta_i$}
 
-\hspace{.5in}The full conditional distribution for $\boldsymbol{\beta}$ is given by
+\hspace{.5in}The full conditional distribution for each regression parameter, $\beta_i$, is given by
 \begin{eqnarray*}
-  [\boldsymbol{\beta} | \cdot] \equiv \textrm{MVN}(\boldsymbol{\mu}_1; {\bf X}_1 \boldsymbol{\beta} + \boldsymbol{\eta},{\bf Q}_1) \prod_{t=2}^T \textrm{MVN}(\boldsymbol{\mu}_t, \mathcal{M}_t \boldsymbol{\Theta}_t,{\bf Q}_t),
+  [\beta_i | \cdot] \equiv \textrm{Normal}(\beta_i;0,100) \times \textrm{MVN}(\boldsymbol{\mu}_1; {\bf X}_1 \boldsymbol{\beta} + \boldsymbol{\eta},{\bf Q}_1) \times \prod_{t=2}^T \textrm{MVN}(\boldsymbol{\mu}_t; {\bf M}_t \boldsymbol{\mu}_{t-1},{\bf Q}_t),
 \end{eqnarray*}
 where dependence upon $\boldsymbol{\beta}$ occurs both in the initial state distribution and in dictating the elements of $\mathcal{M}$ through the resource selection formulation.  As there is no closed form solution, we
 obtain samples using MH updates.
@@ -380,29 +396,37 @@ The full conditional distribution for the precision of exchangable errors is ava
   [\tau_\epsilon | \cdot] & \equiv & \textrm{Gamma}(0.5n + 1.0,0.5 \boldsymbol{\Delta}^\prime \boldsymbol{\Delta} + 0.01),
 \end{eqnarray*}
 and can be simulated from directly.
- Here, $\boldsymbol{\Delta} = \bf{Z} - \boldsymbol{\mu}$, and we only use surveyed sample units to construct the elements of $\boldsymbol{\Delta}$.
+ Here, $\boldsymbol{\Delta}$ is a vector of length $ST$, where the first $S$ elements are residuals associated with the initial state distribution (i.e. $\boldsymbol{\mu}_1 - {\bf X}_1 \boldsymbol{\beta} -  \boldsymbol{\eta}$), and subsequent elements are residuals associated with the resource selection process (i.e. $\boldsymbol{\mu}_t - {\bf M}_t \boldsymbol{\mu}_{t-1} \forall t \ge 2$).
 
 \underline{5. Updating $\boldsymbol{\alpha}$, $\tau_\eta$}
 
-Reduced dimension spatial random effects for the initial state distribution ($\boldsymbol{\alpha}$) and their accompanying precision ($\tau_\eta$) are updated using the same procedure as for the AST model.
+Reduced dimension spatial random effects for the initial state distribution ($\boldsymbol{\alpha}$) and their accompanying precision ($\tau_\eta$) are updated using the same procedure as for the AST model.  In this case, we use all survey units at time $t=1$ to form relevant model matrices.
 
 \underline{6. Updating $\sigma$}
 
 The full conditional distribution for $\sigma$ (the autocorrelation parameter for AR1 temporal random effects) is available in closed form and can be used to simulate values of $\sigma$ directly:
 \begin{eqnarray*}
-  [\sigma | \cdot] & \equiv & \textrm{MVN}( (\boldsymbol{\gamma}_-^\prime \boldsymbol{\gamma}_-)^{-1} \boldsymbol{\gamma}_-^\prime \boldsymbol{\gamma}_+, (\boldsymbol{\gamma}_-^\prime \boldsymbol{\gamma}_-)^{-1} ),
+  [\sigma | \cdot] & \equiv & \textrm{MVN}( (\boldsymbol{\gamma}_-^\prime \boldsymbol{\gamma}_-)^{-1} \boldsymbol{\gamma}_-^\prime \boldsymbol{\gamma}_+, \tau_\gamma^{-1} (\boldsymbol{\gamma}_-^\prime \boldsymbol{\gamma}_-)^{-1} ),
 \end{eqnarray*}
 where
 \begin{eqnarray*}
-   \boldsymbol{\gamma}_- & = & \{ \gamma_1, \gamma_2, \hdots, \gamma_{t-1} \}^\prime, \text{ and}
+   \boldsymbol{\gamma}_- & = & \{ \gamma_2, \gamma_3, \hdots, \gamma_{t-1} \}^\prime, \text{ and}
 \end{eqnarray*}
 \begin{eqnarray*}
-   \boldsymbol{\gamma}_+ & = & \{ \gamma_2, \gamma_3, \hdots, \gamma_{T} \}^\prime.
+   \boldsymbol{\gamma}_+ & = & \{ \gamma_3, \gamma_4, \hdots, \gamma_{T} \}^\prime.
 \end{eqnarray*}
-We enforce the constraint that $0 \le \sigma \le 1$ by rejecting any updates of $\sigma$ that occur outside of this range.
+Note that the initial state distribution has $\gamma_1 = 0$, so there are only $T-1$ effective $\gamma$ parameters with which to base $\sigma$ updates. We enforce the constraint that $0 \le \sigma \le 1$ by rejecting any updates of $\sigma$ that occur outside of this range.
+
+\underline{7. Updating $\tau_\gamma$}
+The full conditional distribution for the precision of temporal random effects is available in closed form as
+\begin{eqnarray*}
+  [\tau_\gamma | \cdot] & \equiv & \textrm{Gamma}(0.5 (T-1) + 1.0,0.5 \boldsymbol{\Delta}_\gamma^\prime \boldsymbol{\Delta}_\gamma + 0.01),
+\end{eqnarray*}
+and can be simulated from directly.
+ Here, $\boldsymbol{\Delta}_\gamma$ is a vector of length $T-1$, where the first element is $\gamma_2$, and susequent elements are $\gamma_{t}-\sigma \gamma_{t-1}$.
 
 
-\underline{7.  Updating $\tau_d$}
+\underline{8.  Updating $\tau_d$}
 
 The parameter $\tau_d$ controls the redistribution kernel, and thus the elements of $\mathcal{M}_t$.  We update
 $\tau_d$ via a MH step, where the full conditional distribution is given by

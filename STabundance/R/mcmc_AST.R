@@ -73,7 +73,7 @@ mcmc_AST<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
   Sites.no.obs=All.sites[Which.no.obs]
   X.obs=matrix(X.pred[Which.obs,],n.obs,n.beta)
   n.no=length(Which.no.obs)
-  X.no.obs=matrix(X.pred[Which.no.obs,],n.obs,n.beta)
+  X.no.obs=matrix(X.pred[Which.no.obs,],n.no,n.beta)
   XpXinv=solve(crossprod(X.obs))
   XpXinvXp=XpXinv%*%t(X.obs)
     

@@ -22,6 +22,12 @@
 sim_RS2<-function(S,Data,Sim.pars,hab.formula){
   require(rgeos)
   require(Matrix)
+  DEBUG=FALSE
+  if(DEBUG){
+    tau.epsilon=100000
+    tau.eta=100000
+  }
+  
   t.steps=length(Data$Grid)
   X=model.matrix(hab.formula,Data$Grid[[1]]@data)  
   Lambda=matrix(0,S,t.steps)
@@ -40,7 +46,7 @@ sim_RS2<-function(S,Data,Sim.pars,hab.formula){
   One=rep(1,S)
   srr.cov=FALSE #if true, add spatially correlated noise to resource selection process
   if(srr.cov)Q.cov=Matrix(10*Q) #add some spatially correlated noise to resource selection process
-  #simulate movement assuming an overdispersed multinomial distribution
+  
   for(it in 2:t.steps){
     X=Data$Grid[[it]]@data  
     X=model.matrix(hab.formula,data=X)

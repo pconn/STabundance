@@ -3,7 +3,8 @@
 source("./STabundance/R/sim_data_generic.R")
 source("./STabundance/R/mcmc_STPC.R")
 source("./STabundance/R/mcmc_CPIF.R")
-source("./STabundance/R/mcmc_SST.R")
+source("./STabundance/R/mcmc_AST.R")
+source("./STabundance/R/mcmc_OPRS.R")
 
 set.seed(12345)
 n.sims=100 #number of simulations at each design point
@@ -29,6 +30,7 @@ if(GENERATE==TRUE){
 Distances=gDistance(gCentroid(Data$Grid[[1]],byid=TRUE),gCentroid(Data$Grid[[1]],byid=TRUE),byid=TRUE)
 Distances=Matrix(Distances)
 #the following neighborhood uses all cells that intersect with a 75km radius circle surrounding a given grid cells centroid
+Distances[which(Distances>3.7)]=NA  #replace all distances >3.7 with NA (not part of my kernel)
 Distances[which(Distances<0.01)]=9
 Distances[which(Distances>.5 & Distances<1.1)]=8
 Distances[which(Distances>1.4 & Distances<1.42)]=7
@@ -38,7 +40,6 @@ Distances[which(Distances>2.8 & Distances<2.9)]=4
 Distances[which(Distances>2.9 & Distances<3.1)]=3
 Distances[which(Distances>3.1 & Distances<3.2)]=2
 Distances[which(Distances>3.6 & Distances<3.7)]=1
-Distances[which(Distances>3.7)]=NA  #replace all distances >3.7 with NA (not part of my kernel)
 
 
 #call estimation routines

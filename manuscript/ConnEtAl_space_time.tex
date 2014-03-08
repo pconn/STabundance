@@ -198,12 +198,12 @@ We will write the $\boldsymbol{\kappa}$ as a function of spatio-temporal paramet
 \end{eqnarray*}
 Using this setup, there are a total of $mT$ $\alpha_{k,t}$ parameters (one for each knot and time step), and ${\bf L}$ is an $(mT \times mT)$ block-diagonal matrix, composed of $T$ copies of the ${\bf K}$ matrix from the previous section.  We allow the
 $\alpha_{k,t}$ parameters to change smoothly over time by imposing an RW2-ICAR distribution on $\{ \alpha_{k,1}, \alpha_{k,2} \hdots \alpha_{k,T} \}$ for each knot $k$.
-This is a conceptually similar approach to that used by \citet{CalderEtAl2002} to describe space-time structure in ozone concentration, and is described further in Appendix S1.  
+This is a conceptually similar approach to that used by \citet{CalderEtAl2002} to describe space-time structure in ozone concentration, and is described further in Appendix S1.
 
-\subsection{Resource selection models}
+\subsection{Resource selection}
 
-We implemented two novel dynamical spatio-temporal models that incorporate resource selection.  The approaches varied by choice of link function and the amount of stochasticity, but the rationale between both approaches was the same: if the quantity and quality of available habitat changes over time, animals should be able to select areas of higher quality, subject to movement constraints.
-In both cases, we follow the general structure for dynamical models for $\mu_{s,t}$ presented in eqn \ref{eq:mu} (with a subtle modification to improve computational tractability; see Appendix S1) and model latent abundance at the beginning of the study using a descriptive formulation:
+We implemented a novel spatio-temporal model incorporating resource selection as a dynamical process.  Our rationale was that if the quantity and quality of available habitat changes over time, animals should be able to select areas of higher quality, subject to movement constraints.
+We followed the general structure for dynamical models for $\mu_{s,t}$ presented in eqn \ref{eq:mu} (with a subtle modification to improve computational tractability; see Appendix S1) and model latent abundance at the beginning of the study using a descriptive formulation:
 \begin{eqnarray*}
   \boldsymbol{\mu}_{1} & = & {\bf X}_{1} \boldsymbol{\beta}_1 + \boldsymbol{\eta} + \boldsymbol{\epsilon}_1,
 \end{eqnarray*}
@@ -230,20 +230,16 @@ The other component of the transition probabilities in eqn \ref{eq:psi} is $w_{s
 \end{eqnarray*}
 letting habitat covariates (but not regression parameters) vary over time.  In contrast to purely descriptive models for $\mu_{s,t}$, we do not include an intercept in this model, as it cancels out of eqn \ref{eq:psi}.
 
-Specifying a model for $\psi^{ab}_t$ gives us a means to allow resource selection ideas to allow $\mu_{s,t}$ evolve over time.  For instance, abundance at time $t$ in a location $s$ is a function of both (i) latent abundance that was in sampling unit $s$ at time $t-1$ that remained in $s$, and (ii) latent abundance in sampling units near $s$ that transitioned into $s$ between $t$ and $t+1$.  However, we have yet to specify a complete model for how such transitions work.  In fact, we include two separate parameterizations for this formulation; in the first, we set
+Specifying a model for $\psi^{ab}_t$ gives us a means to allow resource selection ideas to allow $\mu_{s,t}$ evolve over time.  For instance, abundance at time $t$ in a location $s$ is a function of both (i) latent abundance that was in sampling unit $s$ at time $t-1$ that remained in $s$, and (ii) latent abundance in sampling units near $s$ that transitioned into $s$ between $t$ and $t+1$.  However, we have yet to specify a complete model for how such transitions work.  In the present application, we set
 \begin{eqnarray*}
   \boldsymbol{\mu}_t & = & {\bf M}_t \boldsymbol{\mu}_{t-1} + \gamma_t + \boldsymbol{\epsilon}_t, %\label{eq:log-mu}
 \end{eqnarray*}
-while in the second
-\begin{eqnarray*}
-  \exp(\boldsymbol{\mu}_t) & = & {\bf M}_t \exp(\boldsymbol{\mu}_{t-1}). %\label{eq:exp-mu}
-\end{eqnarray*}
-These models, which we will refer to as OPRS and CPRS (corresponding to open population and closed population resource selection, respectively,) differ in two important ways.  First, since $\mu_{s,t}$ is modeled in log space (see e.g. eqn \ref{eq:basic-mod}), the OPRS specification means that transitions are specified relative to the natural logarithm of abundance intensity, whereas for CPRS abundance intensity is modeled on the real scale.  We cannot include Gaussian error ($\epsilon_{s,t}$) in CPRS, as abundance intensity has to be strictly positive; as such the second model is essentially deterministic.  However, the second formulation induces a ``conservation of mass" property, whereby the expected value for abundance is constant over time (i.e. $\text{E}(N_t) = \text{E}(N_{t+1}) \forall t$); this is not strictly possible with OPRS (see {\it Demographic closure and choice of link function}).  However, we can attempt to compensate for the artifactual effects of range contraction and expansion on modeled abundance in RW1 by including a time-specific random effect, $\gamma_t$, which we model using an AR(1) formulation.
+a specification we will refer to as OPRS (corresponding to open population resource selection). Since $\mu_{s,t}$ is modeled in log space (see e.g. eqn \ref{eq:basic-mod}), the OPRS specification means that transitions are specified relative to the natural logarithm of abundance intensity. We attempt to compensate for the artifactual effects of range contraction and expansion on OPRS modeled abundance by including a time-specific random effect, $\gamma_t$, which we model using an AR(1) formulation.  In theory, it would be possible to also consider a closed population analogue of this model where transitions are modeled on the real (as opposed to the log) scale, but it would be difficult to include Gaussian error in this case sense abundance intensity must be strictly positive.  We leave development of such a model to future investigation.
 
 
 \subsection{A closed population ideal free (CPIF) model}
 
-The CPRS implementation provides a possible approach for implementing a pseudo-closure assumption, but may be too limiting when animal dispersal is either leptokurtic or ``fast" in relation to the time step of the model.  As another approach for constraining expected abundance to be constant over time, we consider a closed population
+The OPRS implementation provides a possible approach for implementing a pseudo-closure assumption, but may be too limiting when animal dispersal is either leptokurtic or ``fast" in relation to the time step of the model.  As another approach for constraining expected abundance to be constant over time, we consider a closed population
 ideal free model where abundance is reallocated to sample units at each time step proportionally to habitat suitability.  In this case, we depart from the general formulation of eqn \ref{eq:hmod} followed up to this point.  Instead, we consider the model
 \begin{eqnarray}
   [N, N_{s,t}, \boldsymbol{\omega},\boldsymbol{\theta} | {\bf x},{\bf C},{\bf o},{\bf p}] & \propto & [{\bf C} | N_{s,t}, {\bf o}, \boldsymbol{\omega}] [\boldsymbol{\omega} | \boldsymbol{\theta},{\bf x},{\bf o}] [N_{s,t}|N,\omega] [\theta].
@@ -283,9 +279,9 @@ In order to examine the utility of each of our proposed modeling approaches, we 
  \item simulating spatio-temporal animal abundance intensity across the simulated landscape according to the assumed data generating structure,
  \item simulating transect placement across each landscape,
  \item simulating transect counts according to the level of overdispersion, and
- \item conducting Bayesian inference with each of our estimation models (SST,STPC,OPRS,CPRS,CPIF).
+ \item conducting Bayesian inference with each of our estimation models (AST,STPC,OPRS,CPIF).
 \end{enumerate}
-We repeated each of these steps 100 times, using a $40 \times 40$ grid for generating habitat configuration, and
+We repeated each of these steps 100 times (with exception of Bayesian inference with the OPRS model; see below).  In each case, we used a $40 \times 40$ grid for configuring habitat composition, and
 a $30 \times 30$ grid (centered in the middle of the $40 \times 40$ grid) for simulating transect surveys and performing estimation (one of our abundance generating models required a larger grid for simulating spatio-temporal animal abundance; see below).  We now describe each of the enumerated steps in turn.
 
 \subsubsection{Generating spatio-temporal habitat landscapes}
@@ -296,13 +292,15 @@ a $30 \times 30$ grid (centered in the middle of the $40 \times 40$ grid) for si
 
 We used three different models to generate spatio-temporal count data from simulated transect surveys.  These included
 \begin{enumerate}
-   \item  A closed population model with restricted dispersal, using the previously defined CPRS structure,
-   \item A closed population model with unlimited dispersal, using the previously defined CPIF structure, and
-   \item An open population with restricted dispersal (OP).
+   \item  A closed population model with restricted dispersal (CPRD), 
+   \item A closed population model with unlimited dispersal (CPUD), using the previously defined CPIF structure, and
+   \item An open population with restricted dispersal (OPRD).
 \end{enumerate}
 The OP model used the CPRS structure to generate data, but on a larger grid (i.e. $40 \times 40$) grid than was used for analysis (i.e. $30 \times 30$).
 
 \subsubsection{Simulating transect surveys}
+
+We considered two 
 
 \subsubsection{Generating transect counts}
 
@@ -329,6 +327,8 @@ This is not to say that our analysis was not useful from a practical standpoint,
 For clarity of presentation, we did not attempt to fully model observation errors that are present in the seal transect data.  For instance, the count data do not account for all seals because some seals are not available to be detected (i.e., are in the water), thermal imagery misses some seals, and there is some species misclassification. As such, spatio-temporal estimates presented in this paper are for demonstration only, as they do not reflect animals unavailable for sampling. \citet{ConnEtAl2014} developed observation models to account for these types of detection errors, where the offset term (${\bf o}$ in eqn \ref{eq:basic-mod}) was used to handle differences in grid cell size and detection probabilities that are less than one.  However, inclusion of species misclassification is more involved and computational demands are considerably greater.  Integrating such observation models with spatio-temporal process models is a subject of current research, and is ultimately what will be needed to produce absolute abundance estimates with realistic measures of precision.
 
 further boundary condition discussion
+
+This study represents an initial probing of the effectiveness of different types of spatio-temporal models for abundance estimation.  Each of the estimation models considered was configured in what seemed to us to be a sensible manner, but there is certainly future opportunity to investigate these choices in a more rigorous manner.  For instance, the spacing and placement of knots for process convolution could have ramifications for estimator performance; optimal choices are likely a function of both the quality and quantity of transect data available CITATIONS.  Similarly, reported computing times could likely be increased with greater effort at the development stage (for instance, coding some of the more computationally intensive calculations in a lower level language).  Some of the relative comparisons of computational speed are likely to persist, however. For instance, we devoted a disproportional amount of effort into speeding up code for resource selection models, but were unable to achieve fast execution times because latent abundance must be estimated at every location for every time step.  By contrast, the other approaches considered only require direct estimation at times and locations where sampling occurs (abundance at other times and locations can be obtained via posterior prediction).
 
 \citet{ChandlerEtAl2011} proposed a class of models for estimating animal density from repeated plot-based samples that allowed the number of animals observed on a study area to change over time; however, their approach assumes that animals are associated with a given study area throughout the study, and that temporary emigration out of the study area is responsible for variation in counts.  As such, their approach is more useful when animals are associated with specific home ranges, as opposed to the case we consider here, where habitat itself can be dynamic and where animals can move across the landscape.
 

@@ -12,7 +12,7 @@
 #' @export
 #' @keywords spatio-temporal, simulation
 #' @author Paul B. Conn
-sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width,delta=1){
+sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width,delta=0){
   require(sp)
   require(rgeos)
   require(Matrix)
@@ -34,13 +34,13 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
   x.len=sqrt(S)
   x.len2=x.len+10
   S2=x.len2^2
-  tau.eta.hab=20
+  tau.eta.hab=15
   
-  #parameters for matern habiatat covariate
+  #parameters for matern habiatat covariate (the matern stuff isn't used anymore now that we have a space-time auto process for the covariate)
   kappa=12
   r=.25
   mu=1000
-  Dat.matern=rMatClust(kappa,r,mu)
+  Dat.matern=rMatClust(kappa,r,mu)  
   X=round((x.len2)*Dat.matern$x+0.5)
   Y=round((x.len2)*Dat.matern$y+0.5)
   Grid=matrix(0,x.len2,x.len2)
@@ -73,11 +73,11 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
   Which.include=which(Which.include==1)
  
   #set up some parameters for covariate s-t process
-  tau.cov=0.2
-  rho.ar1=0.8
+  tau.cov=0.15
+  rho.ar1=0.9
   #sig.ar1=(1-rho.ar1)/tau.cov #to make initial variance approx equal to subsequent variance
-  sig.ar1=0.6 #to make initial variance approx equal to subsequent variance
-  beta0=log(0.6) 
+  sig.ar1=0.4 
+  beta0=0.5
   beta1=log(1+delta)  
   
   #Define knot centers for evolution of habitat covariate using 8 by 8 grid over the larger 40 by 40 grid
@@ -110,7 +110,9 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
   #cov.mult=1/max(Data$Grid[[1]]@data[,1])
   cov.mult=1
   for(it in 1:t.steps){
-    Data$Grid[[it]]@data[,1]=cov.mult*(exp(beta0+beta1*(it-1)+K%*%Alpha[,it]))
+    Data$Grid[[it]]@data[,1]=beta0+beta1*(it-1)+K%*%Alpha[,it]
+    Data$Grid[[it]]@data[,1]=Data$Grid[[it]]@data[,1]/max(Data$Grid[[it]]@data[,1])
+    Data$Grid[[it]]@data[,1][Data$Grid[[it]]@data[,1]<0]=0
     Data$Grid[[it]]@data[,2]=(Data$Grid[[it]]@data[,1])^2
   }
   #plot_N_map(1,as.matrix(Data$Grid[[1]]@data[,1],ncol=1),Grid=Data$Grid,leg.title="Covariate")
@@ -136,7 +138,8 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
   # Compute Data$Which.distances and Data$Dist.entries for RS models
   Distances=gDistance(gCentroid(Data$Grid[[1]],byid=TRUE),gCentroid(Data$Grid[[1]],byid=TRUE),byid=TRUE)
   Distances=Matrix(Distances)
-  #the following neighborhood uses all cells that intersect with a 75km radius circle surrounding a given grid cells centroid
+  #the following neighborhood uses all cells that intersect with a 3 square radius circle surrounding a given grid cells centroid
+  Distances[which(Distances>3.7)]=NA  #replace all distances >3.7 with NA (not part of my kernel)
   Distances[which(Distances<0.01)]=9
     Distances[which(Distances>.5 & Distances<1.1)]=8
   Distances[which(Distances>1.4 & Distances<1.42)]=7
@@ -146,7 +149,6 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
   Distances[which(Distances>2.9 & Distances<3.1)]=3
   Distances[which(Distances>3.1 & Distances<3.2)]=2
   Distances[which(Distances>3.6 & Distances<3.7)]=1
-  Distances[which(Distances>3.7)]=NA  #replace all distances >3.7 with NA (not part of my kernel)
   Data$Which.distances=which(is.na(Distances)==FALSE)
   Data$Dist.entries=Distances[Data$Which.distances]  
   
@@ -154,12 +156,12 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
   
   #now evolve spatial process depending on simulation type
   if(sim.type %in% c("RS2closed","RS2open")){
-    Sim.pars=list(Hab.init=c(-1.5,10,-10),Hab.evol=c(-1.5,10,-10),tau.eta=10,kern.sd=2,tau.epsilon=20)
+    Sim.pars=list(Hab.init=c(3,10,-10),Hab.evol=c(-1.5,10,-10),tau.eta=15,kern.sd=2,tau.epsilon=20)
     Lambda=sim_RS2(S=Cur.S,Data=Data,Sim.pars=Sim.pars,hab.formula=hab.formula)
   }
   K.cpif=K[Which.include,]
   if(sim.type=="CPIF"){
-    Sim.pars=list(Hab=c(-1.5,10,-10),lambda=70000,tau.eta=20,rho.ar1=0.5,sig.ar1=0.1,tau.epsilon=20)
+    Sim.pars=list(Hab=c(-1.5,10,-10),lambda=70000,tau.eta=15,rho.ar1=0.5,sig.ar1=0.1,tau.epsilon=20)
     Lambda=sim_CPIF(S=Cur.S,Data=Data,Sim.pars=Sim.pars,hab.formula=hab.formula,Q.knot=Q.knot,K.cpif=K.cpif)
   }
   
