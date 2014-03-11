@@ -43,6 +43,10 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
   Dat.matern=rMatClust(kappa,r,mu)  
   X=round((x.len2)*Dat.matern$x+0.5)
   Y=round((x.len2)*Dat.matern$y+0.5)
+  X[X<1]=1
+  Y[Y<1]=1
+  X[X>x.len2]=x.len2
+  Y[Y>x.len2]=x.len2
   Grid=matrix(0,x.len2,x.len2)
   for(i in 1:length(X))Grid[X[i],Y[i]]=Grid[X[i],Y[i]]+1
   Grid=Grid/max(as.vector(Grid))
@@ -61,7 +65,7 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
   Data$Effort=NULL
   for(it in 1:t.steps)Data$Grid[[it]]=Grid.SpPDF
 
-  #Determine which cells should be included, removed when going from 40 by 40 grid to 30 by 30 grid
+  #Determine which cells should be included, removed when going from S+10 by S+10 grid to S by S grid
   Which.remove=c(1:(x.len2*5),(S2-x.len2*5+1):S2) #ends
   for(icell in 1:S2){
     if(icell%%x.len2<=5)Which.remove=c(Which.remove,icell)
@@ -80,7 +84,7 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
   beta0=0.5
   beta1=log(1+delta)  
   
-  #Define knot centers for evolution of habitat covariate using 8 by 8 grid over the larger 40 by 40 grid
+  #Define knot centers for evolution of habitat covariate using 6 by 6 grid over the larger 30 by 30 grid
   Which.knot=NA
   cur.pl=1
   for(i in 1:x.len2){
@@ -126,7 +130,7 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
   
   
   
-  #Go ahead and switch to 30 by 30 for RS2closed, CPIF
+  #Go ahead and switch to S by S for RS2closed, CPIF
   Cur.S=S2
   if(sim.type!="RS2open"){
     for(it in 1:t.steps)Data$Grid[[it]]=Data$Grid[[it]][Which.include,]
@@ -149,14 +153,15 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
   Distances[which(Distances>2.9 & Distances<3.1)]=3
   Distances[which(Distances>3.1 & Distances<3.2)]=2
   Distances[which(Distances>3.6 & Distances<3.7)]=1
-  Data$Which.distances=which(is.na(Distances)==FALSE)
+  Data$Which.distances=which(is.na(as.vector(Distances))==FALSE)
   Data$Dist.entries=Distances[Data$Which.distances]  
+  Data$Knot.locations=Knot.centers
   
   hab.formula=~matern+matern2
   
   #now evolve spatial process depending on simulation type
   if(sim.type %in% c("RS2closed","RS2open")){
-    Sim.pars=list(Hab.init=c(3,10,-10),Hab.evol=c(-1.5,10,-10),tau.eta=15,kern.sd=2,tau.epsilon=20)
+    Sim.pars=list(Hab.init=c(3,10,-10),Hab.evol=c(-1.5,10,-10),tau.eta=15,kern.sd=2,tau.epsilon=100)
     Lambda=sim_RS2(S=Cur.S,Data=Data,Sim.pars=Sim.pars,hab.formula=hab.formula)
   }
   K.cpif=K[Which.include,]

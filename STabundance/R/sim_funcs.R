@@ -91,18 +91,18 @@ sim_CPIF<-function(S,Data,Sim.pars,hab.formula,Q.knot,K.cpif){
   X=model.matrix(hab.formula,Data$Grid[[1]]@data)  
   Lambda=matrix(0,S,t.steps)
   Alpha=matrix(0,n.knots,t.steps)
-  Dirichlet=Lambda
+  Cell.probs=Lambda
   N=Lambda
   Q=Matrix(Sim.pars$tau.eta*Q.knot)
   Alpha[,1]=rrw(Q)
-  Dirichlet[,1]=exp(X%*%Sim.pars$Hab+K.cpif%*%Alpha[,1]+rnorm(S,0,1/sqrt(Sim.pars$tau.epsilon)))
-  Lambda[,1]=Sim.pars$lambda*rdirichlet(1,Dirichlet[,1])
+  Cell.probs[,1]=exp(X%*%Sim.pars$Hab+K.cpif%*%Alpha[,1]+rnorm(S,0,1/sqrt(Sim.pars$tau.epsilon)))
+  Lambda[,1]=rmultinom(1,Sim.pars$lambda,Cell.probs[,1])
   #plot_N_map(1,as.matrix(Lambda[,1],ncol=1),Grid=Data$Grid,highlight=c(1,2),cell.width=1,leg.title="Covariate")
   for(it in 2:t.steps){
     X=model.matrix(hab.formula,Data$Grid[[it]]@data)  
     Alpha[,it]=Sim.pars$rho.ar1*Alpha[,it-1]+rnorm(n.knots,0,Sim.pars$sig.ar1)  
-    Dirichlet[,it]=exp(X%*%Sim.pars$Hab+K.cpif%*%Alpha[,it]+rnorm(S,0,0.2))
-    Lambda[,it]=Sim.pars$lambda*rdirichlet(1,Dirichlet[,it])
+    Cell.probs[,it]=exp(X%*%Sim.pars$Hab+K.cpif%*%Alpha[,it]+rnorm(S,0,1/sqrt(Sim.pars$tau.epsilon)))
+    Lambda[,it]=rmultinom(1,Sim.pars$lambda,Cell.probs[,it])
   } 
   Lambda
 }
