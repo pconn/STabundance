@@ -119,7 +119,13 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
     Data$Grid[[it]]@data[,1][Data$Grid[[it]]@data[,1]<0]=0
     Data$Grid[[it]]@data[,2]=(Data$Grid[[it]]@data[,1])^2
   }
-  #plot_N_map(1,as.matrix(Data$Grid[[1]]@data[,1],ncol=1),Grid=Data$Grid,leg.title="Covariate")
+  #pdf(file="sim_knots.pdf")
+  #plot(Data$Grid[[1]],xlab="Easting",ylab="Northing",col='gray')
+  #points(Knot.centers,col="blue",pch=20)
+  #dev.off()
+  
+  #crap=plot_N_map(1,as.matrix(Data$Grid[[1]]@data[,1],ncol=1),Grid=Data$Grid,leg.title="Covariate")+theme(text=element_text(size=16))
+  #crap+geom_points
   #plot_N_map(1,as.matrix(Data$Grid[[2]]@data[,1],ncol=1),Grid=Data$Grid,leg.title="Covariate")
   #plot_N_map(1,as.matrix(Data$Grid[[5]]@data[,1],ncol=1),Grid=Data$Grid,leg.title="Covariate")
   #plot_N_map(1,as.matrix(Data$Grid[[10]]@data[,1],ncol=1),Grid=Data$Grid,leg.title="Covariate")

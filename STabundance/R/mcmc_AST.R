@@ -50,6 +50,9 @@ mcmc_AST<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
                     b.gamma=0.01)
   }
   if(is.null(Area.adjust))Area.adjust=rep(1,S)
+  
+  Data$Count.data=Data$Count.data[order(Data$Count.data$Time,Data$Count.data$Cell),]
+  row.names(Data$Count.data)=c(1:nrow(Data$Count.data))
 
   Offset=Data$Count.data[,"AreaSurveyed"]  
   Count=Data$Count.data[,"Count"]
@@ -102,14 +105,14 @@ mcmc_AST<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
   Tau.eta.mc=Tau.epsilon.mc
   Tau.gamma.mc=Tau.epsilon.mc
   Pred.mc=array(0,dim=c(S,t.steps,mcmc.length))
-  Accept=rep(0,ncol(Data$Count.data))
+  Accept=rep(0,nrow(Data$Count.data))
   Accept.old=Accept
   
   #setup RW2 time series model
   QT=linear_adj_RW2(t.steps)  #precision matrix
   QT.t=t(QT)
   Tmp.dat=Data$Count.data
-  Tmp.dat[,"Time"]=as.factor(Tmp.dat[,"Time"])
+  Tmp.dat[,"Time"]=factor(Tmp.dat[,"Time"],levels=c(1:t.steps))
   XT=model.matrix(~0+Time,data=Tmp.dat)
   XT.t=t(XT)
   cross.XT=crossprod(XT,XT)

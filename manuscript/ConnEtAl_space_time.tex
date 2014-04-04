@@ -124,7 +124,7 @@ specify a dynamical, Markovian model for evolution of the process via $[\boldsym
 where the matrix $M_t$ is possibly a function of covariates and (unknown) parameter values and describes how animals
 redistribute themselves over the landscape from $t \rightarrow t+1$.  A variety of processes could be used to aid construction of $M_t$, including advection-diffusion \citep{Wikle2003} and agent-based models \citep{HootenWikle2010}.  We could also introduce process error to reduce determinism.  We shall explore a hybrid of these approaches that incorporates resource selection via redistribution kernels in a subsequent section (see {\it Spatio-temporal abundance models}).
 
-In an ecological context, descriptive models applied to abundance estimation essentially reflect ideal free distributions \citep{FretwellLucas1970} whereby animal abundance is free to shift to preferable habitat between time steps, regardless of how far apart such habitat is from animal abundance epicenters in previous habitat.  Although inclusion of spatio-temporal random effects have potential to prevent large shifts in abundance from time step to time step, such artifacts may be expected in desriptive statistical models, especially when survey data are sparse.  By contrast, dynamical models have the capacity to constrain shifts in abundance from time step to time step.
+In an ecological context, descriptive models applied to abundance estimation essentially reflect ideal free distributions \citep{FretwellLucas1970} whereby animal abundance is free to shift to preferable habitat between time steps, regardless of how far apart such habitat is from animal abundance epicenters in previous time steps.  Although inclusion of spatio-temporal random effects have potential to prevent large shifts in abundance from time step to time step, such artifacts may be expected in desriptive statistical models, especially when survey data are sparse.  By contrast, dynamical models have the capacity to constrain shifts in abundance from time step to time step.
 
 \subsection{Dimension reduction}
 
@@ -269,43 +269,45 @@ As in the spatio-temporal process convolution model, we include temporally-evolv
 
 We developed custom built MCMC samplers in the R programming environment \citep{RTeam2012} to compute posterior summaries for the previously described models.  Mathematical details of these samplers, including full conditional distributions and prior distribution specifications, are provided in Appendix S1.  We developed an R package, \texttt{STabundance}, which includes all functions, scripts, and datasets to recreate subsequent analyses.  This package is available as an online supplement, and from \url{https://github.com/NMML}.
 
-\section{Simulation study}
+\section{Generic simulation study}
 
 \subsection{Simulation design}
 
-In order to examine the utility of each of our proposed modeling approaches, we conducted a small factorial simulation study, which varied by the type of abundance generating model (3 levels), the amount of sampling effort (2 levels), and the amount of overdispersion in the count data (2 levels).  The simulation study was conducted using a number of steps, including
+In order to examine the utility of each of our proposed modeling approaches, we conducted a small factorial simulation study, which varied by the type of abundance generating model (3 levels) and the amount of sampling effort (2 levels).  Each simulation involved sampling and analysis of animal abundance over a $20 \times 20$ grid for 20 time steps (e.g. Fig. \ref{fig:sim_maps}), and was conducted using the following sequence of steps:
 \begin{enumerate}
- \item simulating habitat configurations and dynamics across a grid,
- \item simulating spatio-temporal animal abundance intensity across the simulated landscape according to the assumed data generating structure,
- \item simulating transect placement across each landscape,
- \item simulating transect counts according to the level of overdispersion, and
- \item conducting Bayesian inference with each of our estimation models (AST,STPC,OPRS,CPIF).
+ \item Simulate spatio-temporal variation in a hypothetical habitat covariate across a landscape,
+ \item Simulate spatio-temporal animal abundance across the simulated landscape according to the specified data generating structure,
+ \item Simulate transect placement across each landscape and time step,
+ \item Simulate transect counts, and
+ \item Conduct Bayesian inference with each of our estimation models (AST,STPC,OPRS,CPIF).
 \end{enumerate}
-We repeated each of these steps 100 times (with exception of Bayesian inference with the OPRS model; see below).  In each case, we used a $40 \times 40$ grid for configuring habitat composition, and
-a $30 \times 30$ grid (centered in the middle of the $40 \times 40$ grid) for simulating transect surveys and performing estimation (one of our abundance generating models required a larger grid for simulating spatio-temporal animal abundance; see below).  We now describe each of the enumerated steps in turn.
+We now briefly describe each of the enumerated steps in turn.  A fuller description is provided in Appendix S2.
 
-\subsubsection{Generating spatio-temporal habitat landscapes}
+\subsubsection{Generating spatio-temporal habitat covariate}
 
-
+For each simulation, we used a $30 \times 30$ grid for configuring habitat composition.  We induced spatio-temporal variation in a single habitat covariate via dynamic process convolution \citep[][; e.g. Fig. \ref{fig:sim_generic_maps}]{CalderEtAl2002}.
 
 \subsubsection{Abundance generating models}
 
 We used three different models to generate spatio-temporal count data from simulated transect surveys.  These included
 \begin{enumerate}
-   \item  A closed population model with restricted dispersal (CPRD), 
+   \item  A closed population model with restricted dispersal (CPRD),
    \item A closed population model with unlimited dispersal (CPUD), using the previously defined CPIF structure, and
    \item An open population with restricted dispersal (OPRD).
 \end{enumerate}
-The OP model used the CPRS structure to generate data, but on a larger grid (i.e. $40 \times 40$) grid than was used for analysis (i.e. $30 \times 30$).
+The OPRD model used the CPRD structure to generate data, but on the full grid (i.e. $30 \times 30$) grid than was used for analysis (i.e. $20 \times 20$).  By contrast, CPRD and CPUD used a smaller, $20 \times 20$ grid (centered in the middle of the $30 \times 30$ grid) to simulate abundance.  In effect, the OPRD generating model allows abundance to shift in and out of the area being surveyed, while CPRD and CPUD do not.  For each generating model, simulations were configured such that animals had preference for intermediate values of the habitat covariate (see Appendix S2).
 
 \subsubsection{Simulating transect surveys}
 
-We considered two 
+We considered two possibilities for 
 
 \subsubsection{Generating transect counts}
 
 \subsubsection{Estimating abundance from simulated data}
 
+\subsection{Generic simulation results}
+
+Proportion relative bias (Fig. \ref{fig:bias_generic})
 
 \section{Example: Spotted seals in the Bering Sea}
 
@@ -342,12 +344,29 @@ One could consider alternative formulations for $\boldsymbol{\varphi}$ that allo
 \bibliography{master_bib}
 
 \pagebreak
+
 \begin{figure*}
 \begin{center}
 \includegraphics[width=170mm]{rs_kernel.png}
-\caption{A visual depiction of the process used to select cells that were ``available" in spatial-temporal abundance models incorporating resource selection.  In particular, the redistribution kernels for the shaded cell $a$ only exhibited positive $\varphi_{a,b}$ values for cells $b$ that intersected with a 3-unit radius circle emanating from the centroid of $a$.} \label{fig:res-sel}
+\caption{A visual depiction of the process used to select cells that were ``available" in spatio-temporal abundance models incorporating resource selection.  In particular, the redistribution kernels for the shaded cell $a$ only exhibited positive $\varphi_{a,b}$ values for cells $b$ that intersected with a 3-unit radius circle emanating from the centroid of $a$.} \label{fig:res-sel}
 \end{center}
 \end{figure*}
 
+\begin{figure*}
+\begin{center}
+\includegraphics[width=170mm]{sim_generic_maps.pdf}
+\caption{An example of one simulation iteration, whereby (a) a habitat covariate is simulated across a hypothetical landscape and allowed to evolve over time (top panels), (b) animal abundance is simulated conditional on the simulated habitat covariate and an assumed formulation for spatio-temporal dynamics, (c) transect surveys are simulated over the landscape (here, transects were assumed to cover $5\%$ of each grid cell transversed), and (d) animal abundance is estimated via a spatio-temporal statistical model.  Each column depicts results for a given time step (each simulation used 20 time steps).  In this particular simulation, abundance was simulated according to the closed population resource selection (CPRS) specification, while estimation was conducted assuming a closed population ideal free (CPIF) model.}
+\label{fig:sim_maps}
+\end{center}
+\end{figure*}
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=170mm]{bias_generic.pdf}
+\caption{Boxplots depicting proportion relative bias of animal abundance for different combinations of data generating model (CPRD, CPUD, or OPRD), sampling effort (1 or 5 transects/time step), and estimation model for ``generic" simulations.  Proportion bias is computed by averaging bias of the posterior mean over all time steps for a particular simulation, with each simulation contributing one data point to each boxplot.  The lower and upper limits of each box correspond to first and third quartiles, while whiskers extend to the lowest and highest observed bias within 1.5 interquartile range units from the box.  Outliers outside of this range are denoted with points.  To make plots more legible, outliers with a proportional bias of greater than 2.0 were truncated at 2.0 for ``1 transect" simulations and at 0.25 for ``5 transect" simulations (denoted with open triangles). Horizontal lines within boxes denote median bias.  Note that the number of simulations for each boxplot varies by estimation model and number of transects (see XXX).
+}
+\label{fig:sim_maps}
+\end{center}
+\end{figure*}
 
 \end{document}

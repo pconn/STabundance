@@ -1,0 +1,220 @@
+\documentclass[12pt,fleqn]{article}
+%\documentclass[12pt,a4paper]{article}
+\usepackage{natbib}
+\usepackage{lineno}
+%\usepackage{lscape}
+%\usepackage{rotating}
+%\usepackage{rotcapt, rotate}
+\usepackage{amsmath,epsfig,epsf,psfrag}
+\usepackage{setspace}
+\usepackage{ulem}
+\usepackage{xcolor}
+\usepackage[labelfont=bf,labelsep=period]{caption} %for making figure and table numbers bold
+\usepackage[colorlinks,bookmarksopen,bookmarksnumbered,citecolor=red,urlcolor=red]{hyperref}
+\hypersetup{pdfpagemode=UseNone}
+
+%\usepackage{a4wide,amsmath,epsfig,epsf,psfrag}
+
+
+\def\be{{\ensuremath\mathbf{e}}}
+\def\bx{{\ensuremath\mathbf{x}}}
+\def\bX{{\ensuremath\mathbf{X}}}
+\def\bthet{{\ensuremath\boldsymbol{\theta}}}
+\newcommand{\VS}{V\&S}
+\newcommand{\tr}{\mbox{tr}}
+%\renewcommand{\refname}{\hspace{2.3in} \normalfont \normalsize LITERATURE CITED}
+%this tells it to put 'Literature Cited' instead of 'References'
+\bibpunct{(}{)}{,}{a}{}{;}
+\oddsidemargin 0.0in
+\evensidemargin 0.0in
+\textwidth 6.5in
+\headheight 0.0in
+\topmargin 0.0in
+\textheight=9.0in
+%\renewcommand{\tablename}{\textbf{Table}}
+%\renewcommand{\figurename}{\textbf{Figure}}
+\renewcommand{\em}{\it}
+\renewcommand\thefigure{S2.\arabic{figure}}
+\renewcommand\thetable{S2.\arabic{table}}
+
+
+\begin{document}
+
+\begin{center} \bf {\large USING SPATIO-TEMPORAL STATISTICAL MODELS TO ESTIMATE ANIMAL ABUNDANCE AND INFER ECOLOGICAL DYNAMICS FROM COUNT DATA}
+
+\vspace{0.7cm}
+Paul B. Conn$^{1*}$, Devin S. Johnson$^1$, Jay M. Ver Hoef$^1$, Mevin B. Hooten$^{2,3,4}$, Josh M. London$^1$, and Peter L. Boveng$^1$
+\end{center}
+\vspace{0.5cm}
+
+\rm
+\small
+
+\it $^1$National Marine Mammal Laboratory, Alaska Fisheries Science Center,
+NOAA National Marine Fisheries Service,
+Seattle, Washington 98115 U.S.A.\\
+
+\it $^2$U.S. Geological Survey, Colorado Cooperative Fish and Wildlife Research Unit, Colorado State University, Fort Collins, CO 80523 U.S.A.\\
+
+\it $^3$Department of Fish, Wildlife, and Conservation Biology, Colorado State University, Fort Collins, CO 80523 U.S.A.\\
+
+\it $^3$Department of Statistics, Colorado State University, Fort Collins, CO 80523 U.S.A.\\
+
+\rm \begin{flushleft}
+
+\raggedbottom
+\vspace{.5in}
+
+
+\begin{center}
+Appendix S2: Details of simulation studies investigating performance of spatio-temporal statistical models for abundance estimation
+\bigskip
+\end{center}
+
+\doublespacing
+We conducted two simulation studies to evaluate the performance of different spatio-temporal statistical models for estimating animal abundance.  In the first, we simulated ``generic" populations, where surveys were assumed to occur over a simple $20 \times 20$ grid.  The advantage of this approach was that estimator performance could be evaluated using a relatively small number of grid cells which resulted in relatively fast execution times.  It also allowed us to investigate performance relative to different data generating models, levels of sampling effort, and degree of change in a hypothetical habitat covariate, thus allowing us to evaluate the robustness of different spatio-temporal statistical models over a variety of sampling situations.
+
+\hspace{.5in} The second simulation study used habitat covariates, effort, and estimated abundance from a recent survey of ice-associated seals \citep[see e.g.][]{ConnEtAl2014} to investigate estimator performance under a more realistic sampling scenario.  The purpose of this study was to determine whether different classes of spatio-temporal statistical models were likely to produce reliable estimates of apparent spotted seal abundance (apparent in the sense that estimates are presently unadjusted for incomplete detection).  We now describe configuration of each of the simulation studies in greater detail.
+
+\section{Simulation study 1: generic populations}
+
+We configured generic simulations such that spatial and temporal variability in animal abundance was dependent (in part) on a hypothetical covariate.  Each simulation involved several steps, as follows.
+
+\underline{1. Generating a spatio-temporal habitat covariate}
+
+To start with, we generated a habitat covariate on a $30 \times 30$ grid by convolving a bivariate Gaussian kernel with independent AR1 time series processes occurring at each of $m=36$ knots located on an even grid around the landscape (Fig. \ref{fig:sim-hab}).  This process is structurally similar to the type of spatio-temporal ``dynamical process convolution model" described by \citet{CalderEtAl2002}.
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=170mm]{sim_knots.pdf}
+\caption{Spatial grid and knot positions (blue points) for simulating spatio-temporal variation in a hypothetical habitat covariate.} \label{fig:sim-hab}
+\end{center}
+\end{figure*}
+
+\hspace{.5in} In particular, covariate values for time $t$ are calculated as
+\begin{eqnarray*}
+  {\bf x}_t = 0.5 + \log(1+\delta) (t-1) + {\bf K}\boldsymbol{\alpha}_t,
+\end{eqnarray*}
+where $\delta$ is a fixed parameter influencing the degree of contraction or expansion of the habitat covariate, $\boldsymbol{\alpha}_t$ is a vector of length $m$ giving time-specific weights associated with each knot, and the $S \times m$ dimensional matrix ${\bf K}$ maps the weights associated with each knot to $S$-dimensional space (in this case $S=900$ gives the total number of grid cells).  The entries in ${\bf K}$ are proportional to distance-specific kernel densities used to interpolate between the $m$ knots and the $S$ spatio-temporal locations being modeled.  We set ($\sigma=5$), the distance between knot locations, and set the $i$th row and $j$th column of ${\bf K}$ to $N(d_{ij}; 0,\sigma^2)$, where $N$ denotes the Gaussian probability density function and $d_{ij}$ gives the distance from the centroid of grid cell $i$ to the location of knot $j$.  The elements of ${\bf K}$ are then renormalized so that rows sum to 1.0.
+
+\hspace{.5in} We initialized the weights, $\boldsymbol{\alpha}_1$, by drawing them from an intrinsic conditionally autoregressive (ICAR) process with precision parameter $\tau = 15$ \citep[see e.g.][]{RueHeld2005}.  We then let weights evolve over time according to independent AR1 processes, i.e.
+\begin{eqnarray}
+  \boldsymbol{\alpha}_t = \boldsymbol{\rho} \boldsymbol{\alpha}_{t-1} + \boldsymbol{\epsilon},
+  \label{eq:alpha}
+\end{eqnarray}
+where $\boldsymbol{\rho}=0.9 I_S$ is an $(m \times m)$ matrix with $\rho = 0.9$ on the main diagonal and zero elsewhere, and $\boldsymbol{\epsilon}$ is a vector of iid random normal variates with a standard deviation of 0.4.  These values were selected to achieve a habitat covariate that would evolve over time at a reasonable speed (see Fig. 1 in the main journal article for an example).  After habitat covariates were generated, we (1) divided each covariate by the covariate of maximum value for a particular time step (i.e. ${\bf x}_t^* = {\bf x}_t / \max ({\bf x}_t)$), and then truncated all negative valued covariates at zero (i.e. $\{ x_{st}^* | x_{st} < 0 \} = 0$).  This process helped assure that a reasonable range of covariates would be observed over the range $(0,1)$, and was an attempt to decrease the likelihood of abundance predictions outside the range of observed data.
+
+\underline{2. Simulating animal abundance conditional on hypothetical habitat covariate}
+
+For each simulated landscape, we then simulated spatially and temporally specific abundance across the landscape.  We used three different data-generating models, including (1) an open population model with restricted dispersal (OPRD), (2) a closed population model with restricted dispersal (CPRD), and (3) a closed population model with unlimited dispersal (CPUD).
+
+\hspace{.5in} The OPRD and CPRD models were constructed in an identical fashion, the difference being that OPRD dynamics were simulated over a larger area than was surveyed, while the CPRD model assumed that surveys covered the entire area.  In particular, OPRD dynamics were simulated over the entire $(30 \times 30)$ grid of covariate values while surveys were only conducted over a central $(20 \times 20)$ grid.  By contrast, CPRD simulations started with the inner $(20 \times 20)$ grid for generating abundance data.  In effect, the OPRD generating model allows animal abundance to cross the boundaries of the the survey area from time step to time step, while CPRD does not.  Underlying dynamics proceeded as follows:
+\begin{enumerate}
+\renewcommand{\theenumi}{\Alph{enumi}} %use letters here since simulation steps are numbers
+  \item Initialize latent abundance at the first time step as
+   $\log(\boldsymbol{\lambda}_1) = {\bf X} \boldsymbol{\beta} + \boldsymbol{\eta} + \boldsymbol{\epsilon}$,
+   where ${\bf X}$ denotes an $(S \times 3)$ design matrix, $\boldsymbol{\beta}$ give regression parameters, $\boldsymbol{\eta}$ give spatial random effects, and $\boldsymbol{\epsilon}$ represent iid Gaussian error.  In particular, we include linear and quadratic effects of the habitat covariate, such that the rows of ${\bf X}$ are given by $[1 \hspace{2mm} x_{s1} \hspace{2mm} x_{s1}^2]$ and set $\boldsymbol{\beta} = [3 \hspace{2mm} 10 \hspace{2mm} -10]^\prime$ so that expected abundance would have a unimodal, quadratic relationship with the hypothetical covariate (Fig. \ref{fig:cov-relation}).  Spatial random effects were simulated by drawing from an ICAR($\tau=15$) distribution, and the variance for exchangable, iid errors (i.e. $\boldsymbol{\epsilon}$) was set to 0.01. This procedure resulted in true abundances that were in the 30,000 - 80,000 range.\\
+  \item Simulate latent abundance after time 1 via a resource selection model operating on the real scale.  In particular, $\boldsymbol{\lambda}_t = {\bf M}_t \boldsymbol{\lambda}_{t-1}$, where ${\bf M}_t$ is defined in exactly the same manner as for the OPRS model presented in Appendix S1.  Entries of the transition matrix $M_t$ depend on the relative favorability of a given cell as a function of the habitat covariate, and the Euclidean distance between the centroid of the originating cell to the target cell. We again used a linear regression coefficient of 10.0 and a quadratic regression coefficient of -10.0 (Fig. \ref{fig:cov-relation}) as a measure of habitat favorability, and used a standard deviation of 2.0 cells to set the bivariate Gaussian redistribution kernel (see Appendix S1).
+\end{enumerate}
+We note that this specification is quite similar to that used in parameter estimation using the OPRS model (Appendix S1).  However, an important distinction is that the resource selection model occurs here on the real scale (i.e., ${\bf M}_t$ operates on $\boldsymbol{\lambda}$), while in the OPRS estimation model it operates of the log scale. This distinction is important, in that abundance can be held roughly constant during simulations (either on the central $(20 \times 20)$ grid for CPRD or the full $(30 \times 30)$ grid for OPRD).  Also, conditional on abundance at the first time step, evolution of the latent abundance process is deterministic in the simulation setting, but not in the estimation setting.
+
+\hspace{.5in} The CPUD model was constructed using the same closed population ideal free (CPIF) formulation as described in Appendix S1.  Namely, abundance at time $t$ was simulated as
+\begin{eqnarray*}
+  \boldsymbol{\lambda}_t & \sim & \text{Multinomial}(\lambda; \boldsymbol{\pi}_t),
+\end{eqnarray*}
+where we set $N=70,000$ and calculated $\boldsymbol{\pi}_t$ as
+\begin{eqnarray}
+  \boldsymbol{\pi}_{t} \propto \exp(\beta_1 {\bf x}_t + \beta_2 {\bf x}_t^2 + {\bf K}\boldsymbol{\alpha}_t + \boldsymbol{\epsilon}_t).
+  \label{eq:pi}
+\end{eqnarray}
+Here, we include spatio-temporal random effects through process convolution using the same set of equations as we did for simulating habitat covariates.  In particular, ${\bf K}$ is set as before, and $\boldsymbol{\alpha}_t$ evolve as in Eq. \ref{eq:alpha}.  For simulating abundance data, we once again set $\beta_1 = 10$ and $\beta_2 = -10$.  We set initial $\boldsymbol{\alpha}$ by drawing them from an ICAR($\tau=15$) distribution, and set the AR1 autocorrelation parameters for $\boldsymbol{\alpha}$ to $\rho = 0.5 $ and $\sigma = 0.1$.  The precision for exchangeable errors (i.e. the $\boldsymbol{\epsilon}_t$ in Eq. \ref{eq:pi}) was set to 20.  These values were subjective but not arbitrary; they were obtained via trial and error with the objective that latent abundance evolve neither too fast nor too slow.
+
+\underline{3. Simulating counts from transect surveys}
+
+At each time step of simulation, transects were simulated as straight, vertical lines across the entire study area, beginning at randomly selected grid cells along the southern terminus (see e.g. Fig. 1 of main article).  Each transect thus covered 20 grid cells; we configured simulations such that transects covered 5\% of each grid cell they passed through.  In the event of $>1$ transect per time step, starting grid cells on the southern terminus were sampled via a uniform distribution without replacement.  Transect placement was re-randomized at each time step.  Although strategic options for spatially balanced sampling would have been possible here, our experience with conducting aerial transect surveys in dynamic environments is that logistical factors such as weather often prevent one from adhering to `optimal' sampling designs.  Random transect placement was an attempt to mimic such a situation.
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=170mm]{Covariate_abundance_relation.pdf}
+\caption{Relationship between expected initial abundance ($\boldsymbol{\lambda}$) and a simulated covariate for ``generic" spatio-temporal abundance simulations.  The absolute relationship applies to initial abundance (i.e. at the first time step) for both restricted dispersal data generating models (OPRD and CPRD); the same relative relationship (ignoring the intercept) is applied to the evolution of abundance via habitat selection for OPRD and CPRD, and to multinomial cell probabilities for the unlimited dispersal data generating model (CPUD).} \label{fig:cov-relation}
+\end{center}
+\end{figure*}
+
+Following selection of the grid cells and times where sampling occurred, we drew animal counts from a Poisson distribution at times and locations where sampling was conducted:
+\begin{eqnarray*}
+  C_{s,t} & \sim & \text{Poisson}(0.05 \lambda_{s,t}).
+\end{eqnarray*}
+
+\underline{4. Estimation of animal abundance}
+
+For each simulated dataset we used 1-4 estimation models (see \texttt{Simulation design and performance metrics}) to estimate animal abundance.  These included AST, CPIF, OPRS, and STPC (for further detail on these models and prior distributions used, see Appendix S1).  Each model was provided with the spatio-temporal covariates used in in abundance generation for use in the linear predictor part of each estimation model.
+
+\subsection{Simulation design and performance metrics}
+
+We conducted a small simulation study where simulation replicates varied by (1) the number of transects conducted per time step (1 or 5), and (2) the data generating model (CPRD, CPUD, or OPRD).  We generated 100 simulated animal count data sets per design point, each of which had a different value of $\delta$ (recall that $\delta$ controls the propensity for the habitat covariate to decrease or increase as a function of time).  In particular, we let $\delta$ range from -0.02 (a two percent expected decrease in the habitat covariate between times steps) to 0.02 in equally spaced increments.
+
+\hspace{.5in} Unfortunately, estimating abundance for each such simulation replicate with each type of estimation model was not feasible owing to computational limitations.  To set the number of simulation replicates analyzed by each estimation method, we first conducted a single analysis with each combination of estimation model and number of transects.  Desiring to have Monte Carlo error coefficient of variation (CV) below 0.01, we calculated the number of MCMC iterations ($n$) necessary to obtain this goal.  This was accomplished using the relation
+\begin{eqnarray*}
+  n = 10,000(1+2 \sum_k \hat{\rho}_k)\hat{\sigma}_N^2 \hat{N}^{-2},
+\end{eqnarray*}
+where $\hat{\rho}_k$ indicates lag $k$ autocorrelation, $\hat{\sigma}_N^2$ gives posterior variance for
+estimated abundance, and $\hat{N}$ gives the posterior mean for abundance.  We then adjusted this estimate upwards depending on appearance of MCMC trace plots to arrive at MCMC run times (Table \ref{tab:run_times}).  Including a 10,000 iteration ``burn-in" and a 5,000 iteration tuning phase for each analysis, we then estimated requisite run times for each analysis type for the two levels of sample coverage (1 or 5 transects; Table \ref{tab:run_times}).
+
+\begin{table}
+\caption{\setstretch{2} Execution details for MCMC analysis of spatio-temporal abundance data as a function of estimation model and number of transects.  Estimation model and transects/time step are indicated in columns (e.g., AST-5 indicates the AST model applied to data from 5 transects/time step).  Presented are the minimum number of MCMC iterations needed to achieve a Monte Carlo CV of 0.01 (`Min iterations'), the number of MCMC iterations used to summarize the posterior distribution (`MCMC length'), the number of additional iterations at the beginning of the MCMC chain that are discarded as a burn-in (`Burn-in'), the number of additional iterations conducted per simulation in order to tune Metropolis-Hastings proposal distributions prior to start of the main MCMC run (`Adapt length'), the estimated number of hours per simulation (`Hrs/sim'), and the actual number of simulations that were analyzed for each estimation model (`\# Sims').}
+\label{tab:run_times}
+\begin{tabular}{rrrrrrrrr}
+\\
+ & \multicolumn{8}{c}{Estimation model} \\
+ & AST-1 & AST-5 & CPIF-1 & CPIF-5 & OPRS-1 & OPRS-5 & STPC-1 & STPC-5 \\
+\hline \hline
+Min iterations:  & 13,000 & 1,014 & 32,700 & 80 & 45,081 & 6,218 & 52,000 & 320 \\
+MCMC length: & 20,000  & 10,000 & 100,000 & 10,000 & 50,000 & 10,000 & 100,000 & 10,000 \\
+Burn-in: & 10,000 & 10,000 & 10,000 & 10,000 & 10,000 & 10,000 & 10,000 & 10,000 \\
+Adapt length: & 5,000 & 5,000 & 5,000 & 5,000 & 5,000 & 5,000 & 5,000 & 5,000 \\
+Hrs/sim:   & 0.23 & 0.17 & 1.53 & 0.33 & 71.5 & 27.5 & 0.77 & 0.17 \\
+\# Sims:  & 100 & 100 & 10 & 100 & 0 & 10 & 10 & 100 \\
+\hline
+\end{tabular}
+\end{table}
+
+\hspace{.5in} Examination of Table \ref{tab:run_times} indicated extremely slow run times for the OPRS model, and that longer run times would generally be needed when there were fewer data (i.e. when there was only one transect for time step).  We thus limited the number of simulation replicates analyzed for certain combinations of estimation model and sample coverage (Table \ref{tab:run_times}).  For instances where only 10 simulations were analyzed, we chose data sets to cover a range of $\delta$ values (by selecting simulations $5, 15, 25, \hdots, 95$).
+
+
+\subsection{Results}
+
+
+
+
+
+
+the central while   Appendix S1.  In this version, we
+
+, ideal free (CPIF) model, constructed as described in Appendix S1, (2) an open population resource selection (OPRS) model, constructed in the same manner as in Appendix S1, and (3) a closed population resource selection (CPRS)
+
+
+
+\hspace{.5in} Although surveys and estimation occurred on a $20 \times 20$ grid, one of our data generating models assuming an open population required a larger grid size (see below).
+
+
+
+\section{Simulation study 2: spotted seals in the eastern Bering Sea}
+
+
+\begin{linenomath*}
+\begin{eqnarray}
+  poop \nonumber
+\end{eqnarray}
+\end{linenomath*}
+
+
+
+
+\renewcommand{\refname}{Literature Cited}
+\bibliographystyle{JEcol}
+
+\bibliography{master_bib}
+
+\end{flushleft}
+\end{document}
+

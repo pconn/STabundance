@@ -34,6 +34,8 @@
 %\renewcommand{\tablename}{\textbf{Table}}
 %\renewcommand{\figurename}{\textbf{Figure}}
 \renewcommand{\em}{\it}
+\renewcommand\thefigure{S1.\arabic{figure}}
+
 
 \begin{document}
 
@@ -233,11 +235,11 @@ The full conditional distribution for $\boldsymbol{\alpha}$ is available in clos
 \end{equation*}
 and can also be simulated from directly.  The variance-covariance matrix $v_{\alpha}$ of the full conditional can be written as
 \begin{equation*}
-  {\bf v}_{\alpha} = ({\bf K}^{\prime}{\bf K} \tau_\epsilon + \mathcal{D}(\tau_\eta))^{-1},
+  {\bf v}_{\alpha} = ({\bf L}^{\prime}{\bf L} \tau_\epsilon + \tau_\eta {\bf Q})^{-1},
 \end{equation*}
-where $\mathcal{D}(\tau_\eta)$ here gives an $m \times m$ diagonal matrix with diagonal entries all equal to $\tau_\eta$.  The mean of the full conditional is given by
+where ${\bf Q}$ here gives a $mT \times mT$ block diagonal matrix, whose block elements are equal to structure matrices associated with the RW2-ICAR process \citep[see][for instructions on how to construct this matrix]{RueHeld2005}.  The mean of the full conditional is given by
 \begin{equation*}
-  {\bf m}_{\alpha} = {\bf v}_\alpha \tau_\epsilon {\bf K}^\prime (\boldsymbol{\mu}- {\bf X} \boldsymbol{\beta} - \boldsymbol{\gamma})
+  {\bf m}_{\alpha} = {\bf v}_\alpha \tau_\epsilon {\bf L}^\prime (\boldsymbol{\mu}- {\bf X} \boldsymbol{\beta} - \boldsymbol{\kappa})
 \end{equation*}
 As in previous steps, we only use surveyed sample units to construct the elements of each matrix and vector included in this full conditional.
 
@@ -245,7 +247,7 @@ As in previous steps, we only use surveyed sample units to construct the element
 
 The precision $\tau_\eta$ is also available in closed form and can be simulated directly via the full conditional
 \begin{equation*}
-  [\tau_\eta | \cdot] \equiv \textrm{Gamma}(0.5m + 1.0,0.5 \boldsymbol{\alpha}^\prime \boldsymbol{\alpha} + 0.01).
+  [\tau_\eta | \cdot] \equiv \textrm{Gamma}(0.5mT + 1.0,0.5 \boldsymbol{\alpha}^\prime \boldsymbol{\alpha} + 0.01).
 \end{equation*}
 
 \section{Open population resource selection (OPRS) model}

@@ -36,7 +36,6 @@
 
 
 mcmc_STPC<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
-  source('c:/users/paul.conn/git/STabundance/STabundance/R/util_funcs.R')
   require(Matrix)
   require(mvtnorm)
   
@@ -52,6 +51,10 @@ mcmc_STPC<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
     )
   }
   if(is.null(Area.adjust))Area.adjust=rep(1,S)
+
+  #sort count data by time and cell so that some of the list to vector code will work right
+  Data$Count.data=Data$Count.data[order(Data$Count.data$Time,Data$Count.data$Cell),]
+  row.names(Data$Count.data)=c(1:nrow(Data$Count.data))
 
   Offset=Data$Count.data[,"AreaSurveyed"]  
   Count=Data$Count.data[,"Count"]
@@ -102,7 +105,7 @@ mcmc_STPC<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
   Tau.epsilon.mc=rep(0,mcmc.length)
   Tau.eta.mc=Tau.epsilon.mc
   Pred.mc=array(0,dim=c(S,t.steps,mcmc.length))
-  Accept=rep(0,ncol(Data$Count.data))
+  Accept=rep(0,nrow(Data$Count.data))
   Accept.old=Accept
   
   #setup process conv/RW2 space-time model
@@ -118,6 +121,7 @@ mcmc_STPC<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
   K.obs=K[Which.obs,]
   K.obs.t=t(K.obs)
   cross.K<-crossprod(K.obs,K.obs)
+  Diag=diag(nrow(cross.K))*0.001
   
   for(iiter in 1:Control$iter){
     if(iiter%%1000==0)cat(paste('iteration ',iiter,' of ',Control$iter,'\n'))
@@ -143,9 +147,9 @@ mcmc_STPC<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
     
     #update kernel weights/REs for spatial model
     Dat.minus.Exp=Mu[Which.obs]-X.obs%*%Beta
-    V.eta.inv <- cross.K*tau.epsilon+tau.eta*Q
+    V.eta.inv <- cross.K*tau.epsilon+tau.eta*Q+Diag
     M.eta <- solve(V.eta.inv,tau.epsilon*K.obs.t%*%Dat.minus.Exp)
-    Alpha <- M.eta + solve(Cholesky(V.eta.inv), rnorm(length(M.eta),0,1))
+    Alpha <- M.eta + solve(chol(V.eta.inv), rnorm(length(M.eta),0,1))
     Alpha=Alpha-mean(Alpha)  #so intercept of fixed effects identifiable... note there's still implicit linear trend parameters for each alpha t-series
     Eta=K%*%Alpha
     #update tau.eta
@@ -171,6 +175,9 @@ mcmc_STPC<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
         Mu[Which.no.obs]=rnorm(n.no,X.no.obs%*%Beta+Eta[Which.no.obs],sqrt(1/tau.epsilon))
         #posterior predictions of abundance across landscape
         Pred.mc[,,(iiter-Control$burnin)/Control$thin]=rpois(S*t.steps,exp(Log.area.adjust+Mu))    
+      }
+      if(sum(is.na(Pred.mc[,,(iiter-Control$burnin)/Control$thin]))>0){
+        temp=1
       }
     }
   } 

@@ -59,7 +59,7 @@ for(it in 2:t.steps){
   else Iw=Diagonal(x=as.vector(exp(X%*%Hab.pars)))
   Phi[Data$Which.distances]=Dist.pdf[Data$Dist.entries]
   M=Diagonal(x=as.vector(1/(Phi%*%Iw%*%One)))%*%Phi%*%Iw
-  N[,it]=t(M)%*%N[,it-1])
+  N[,it]=as.vector(t(M)%*%N[,it-1])
 }
 
 #function for plotting abundance map

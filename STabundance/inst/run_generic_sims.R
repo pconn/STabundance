@@ -2,6 +2,8 @@
 # script to run generic spatio-temporal count data simulations
 require(rgeos)
 source("./STabundance/R/sim_data_generic.R")
+source("./STabundance/R/sim_funcs.R")
+source("./STabundance/R/util_funcs.R")
 source("./STabundance/R/mcmc_STPC.R")
 source("./STabundance/R/mcmc_CPIF.R")
 source("./STabundance/R/mcmc_AST.R")
@@ -35,15 +37,20 @@ if(GENERATE==TRUE){
 Est.mods=c("CPIF","AST","STPC","OPRS")
 Sim.ind.10= c(1:10)*10-5
 for(igen in 1:3){  #loop over generating model to generate data sets
-  for(itrans in 1:2){ #loop over number of transects in each cell
-    for(isim in 1:n.sims){  
-      igen=1
-      itrans=2
-      isim=1
+  for(itrans in 1:1){ #loop over number of transects in each cell
+    for(isim in 1:(n.sims/2)){  
+
+      if(igen==3){
+        fname=paste("simdata_gen",Model.list[igen-1],"_trans",N.transects[itrans],"_sim",isim,sep='')
+        load(paste("./sim_generic_data/",fname,sep=''))
+        Which.distances=Sim.data$Data$Which.distances  
+      }
+      
       fname=paste("simdata_gen",Model.list[igen],"_trans",N.transects[itrans],"_sim",isim,sep='')
       load(paste("./sim_generic_data/",fname,sep=''))
       Data=Sim.data$Data
-
+      if(igen==3)Data$Which.distances=Which.distances
+      
       n.knots=length(Data$Knot.locations)
       #calculate kernel densities at grid cell centroids 
       Cell.centroids=gCentroid(Data$Grid[[1]],byid=TRUE)
@@ -92,7 +99,7 @@ for(igen in 1:3){  #loop over generating model to generate data sets
         
         if(Est.mods[iest]=="STPC"){
           if(itrans==1 & isim%in%Sim.ind.10){
-            Control=list(iter=5000,burnin=100,thin=1000,srr.tol=0.5,predict=FALSE,MH.mu=rep(0.2,nrow(Data$Count.data)),MH.N=0.05,MH.omega=rep(0.05,t.steps),adapt=TRUE,fix.tau.epsilon=FALSE)        
+            Control=list(iter=5000,burnin=100,thin=1000,srr.tol=0.5,predict=TRUE,MH.mu=rep(0.2,nrow(Data$Count.data)),MH.N=0.05,MH.omega=rep(0.05,t.steps),adapt=TRUE,fix.tau.epsilon=FALSE)        
             MCMC=mcmc_STPC(model=~matern+matern2,Prior.pars=NULL,Data=Data,Control=Control)
             Control=list(iter=110000,burnin=10000,thin=50,srr.tol=0.5,predict=TRUE,MH.mu=MCMC$Control$MH.mu,MH.N=0.05,MH.omega=rep(0.05,t.steps),adapt=FALSE,fix.tau.epsilon=FALSE)        
             MCMC=mcmc_STPC(model=~matern+matern2,Prior.pars=NULL,Data=Data,Control=Control)   
@@ -119,7 +126,7 @@ for(igen in 1:3){  #loop over generating model to generate data sets
           run.flag=1
         }  
         
-        out.file=paste("d:/ST_out/ST_out_mod_",Est.mods[iest],"_trans_",itrans,"_sim",isim,".Rdata",sep="")
+        out.file=paste("d:/ST_out/ST_out_gen",igen,"_est_",Est.mods[iest],"_trans_",itrans,"_sim",isim,".Rdata",sep="")
         if(run.flag==1)save(MCMC,file=out.file)
  
         #save results of MCMC run as .Rdata

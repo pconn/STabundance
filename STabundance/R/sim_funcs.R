@@ -15,11 +15,13 @@
 #'         tau.eta - precision for spatial random effects on initial abundance
 #'         tau.epsilon - precision for random noise
 #' @param hab.formula A formula object holding the regression model formulation
+#' @param Area.adjust   If provided, a vector allowing for differences in suitable habitat for each cell.  Can be used for different grid cell sizes or different
+#'        proportions of suitable habitat (e.g., 1.0 = 100% of habitat is suitable for the focal species)
 #' @return Lambda  A matrix holding spatio-temporal lambda values
 #' @export
 #' @keywords spatio-temporal, simulation
 #' @author Paul B. Conn
-sim_RS2<-function(S,Data,Sim.pars,hab.formula){
+sim_RS2<-function(S,Data,Sim.pars,hab.formula,Area.adjust=NULL){
   require(rgeos)
   require(Matrix)
   DEBUG=FALSE
@@ -27,6 +29,8 @@ sim_RS2<-function(S,Data,Sim.pars,hab.formula){
     tau.epsilon=100000
     tau.eta=100000
   }
+  if(is.null(Area.adjust))Area.adjust=rep(1,S)
+  Log.area.adjust=log(Area.adjust)
   
   t.steps=length(Data$Grid)
   X=model.matrix(hab.formula,Data$Grid[[1]]@data)  
@@ -36,7 +40,7 @@ sim_RS2<-function(S,Data,Sim.pars,hab.formula){
   diag(Q)=apply(Data$Adj,2,'sum')
   Q=Matrix(Sim.pars$tau.eta*Q)
   Eta=rrw(Q)
-  Lambda[,1]=exp(X%*%Sim.pars$Hab.init+Eta+rnorm(S,0,1/sqrt(Sim.pars$tau.epsilon)))
+  Lambda[,1]=exp(Log.area.adjust+X%*%Sim.pars$Hab.init+Eta+rnorm(S,0,1/sqrt(Sim.pars$tau.epsilon)))
   #plot_N_map(1,as.matrix(Lambda[,1],ncol=1),Grid=Data$Grid,highlight=c(1,2),cell.width=1,leg.title="Covariate")
  
   
@@ -50,11 +54,11 @@ sim_RS2<-function(S,Data,Sim.pars,hab.formula){
   for(it in 2:t.steps){
     X=Data$Grid[[it]]@data  
     X=model.matrix(hab.formula,data=X)
-    if(srr.cov==TRUE)Iw=Diagonal(x=as.vector(exp(X%*%Sim.pars$Hab.evol+rrw(Q.cov))))
-    else Iw=Diagonal(x=as.vector(exp(X%*%Sim.pars$Hab.evol)))
+    if(srr.cov==TRUE)Iw=Diagonal(x=as.vector(exp(Log.area.adjust+X%*%Sim.pars$Hab.evol+rrw(Q.cov))))
+    else Iw=Diagonal(x=as.vector(exp(Log.area.adjust+X%*%Sim.pars$Hab.evol)))
     Phi[Data$Which.distances]=Dist.pdf[Data$Dist.entries]
     M=Diagonal(x=as.vector(1/(Phi%*%Iw%*%One)))%*%Phi%*%Iw
-    Lambda[,it]=as.vector(t(M)%*%Lambda[,it-1])
+    Lambda[,it]=Area.adjust*as.vector(t(M)%*%Lambda[,it-1])
   }
   Lambda
 }
@@ -81,11 +85,15 @@ sim_RS2<-function(S,Data,Sim.pars,hab.formula){
 #' @param hab.formula A formula object holding the regression model formulation
 #' @param Q.knot A structure matrix for reduced rank rsr model for spatio-temporal random effects at the first time step
 #' @param K.cpif A matrix holding the N by k weights associated with process convolution
+#' @param Area.adjust   If provided, a vector allowing for differences in suitable habitat for each cell.  Can be used for different grid cell sizes or different
+#'        proportions of suitable habitat (e.g., 1.0 = 100% of habitat is suitable for the focal species)
 #' @return Lambda  A matrix holding spatio-temporal lambda values
 #' @export
 #' @keywords spatio-temporal, simulation
 #' @author Paul B. Conn
-sim_CPIF<-function(S,Data,Sim.pars,hab.formula,Q.knot,K.cpif){
+sim_CPIF<-function(S,Data,Sim.pars,hab.formula,Q.knot,K.cpif,Area.adjust=NULL){
+  if(is.null(Area.adjust))Area.adjust=rep(1,S)
+  Log.area.adjust=log(Area.adjust)
   t.steps=length(Data$Grid)
   n.knots=ncol(K.cpif)
   X=model.matrix(hab.formula,Data$Grid[[1]]@data)  
@@ -95,13 +103,13 @@ sim_CPIF<-function(S,Data,Sim.pars,hab.formula,Q.knot,K.cpif){
   N=Lambda
   Q=Matrix(Sim.pars$tau.eta*Q.knot)
   Alpha[,1]=rrw(Q)
-  Cell.probs[,1]=exp(X%*%Sim.pars$Hab+K.cpif%*%Alpha[,1]+rnorm(S,0,1/sqrt(Sim.pars$tau.epsilon)))
+  Cell.probs[,1]=exp(Log.area.adjust+X%*%Sim.pars$Hab+K.cpif%*%Alpha[,1]+rnorm(S,0,1/sqrt(Sim.pars$tau.epsilon)))
   Lambda[,1]=rmultinom(1,Sim.pars$lambda,Cell.probs[,1])
   #plot_N_map(1,as.matrix(Lambda[,1],ncol=1),Grid=Data$Grid,highlight=c(1,2),cell.width=1,leg.title="Covariate")
   for(it in 2:t.steps){
     X=model.matrix(hab.formula,Data$Grid[[it]]@data)  
     Alpha[,it]=Sim.pars$rho.ar1*Alpha[,it-1]+rnorm(n.knots,0,Sim.pars$sig.ar1)  
-    Cell.probs[,it]=exp(X%*%Sim.pars$Hab+K.cpif%*%Alpha[,it]+rnorm(S,0,1/sqrt(Sim.pars$tau.epsilon)))
+    Cell.probs[,it]=exp(Log.area.adjust+X%*%Sim.pars$Hab+K.cpif%*%Alpha[,it]+rnorm(S,0,1/sqrt(Sim.pars$tau.epsilon)))
     Lambda[,it]=rmultinom(1,Sim.pars$lambda,Cell.probs[,it])
   } 
   Lambda

@@ -39,7 +39,6 @@
 mcmc_CPIF<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
   require(Matrix)
   require(mvtnorm)
-  require(doBy)
   source("c:/users/paul.conn/git/STabundance/STabundance/R/util_funcs.R")
   
   #set.seed(12344)
@@ -56,11 +55,19 @@ mcmc_CPIF<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
   }
   if(is.null(Area.adjust))Area.adjust=rep(1,S)
   
+  #sort count data by time and cell so that some of the list to vector code will work right
+  Data$Count.data=Data$Count.data[order(Data$Count.data$Time,Data$Count.data$Cell),]
+  row.names(Data$Count.data)=c(1:nrow(Data$Count.data))
+  
   P=Data$Count.data[,"AreaSurveyed"]  
   Count=Data$Count.data[,"Count"]
   Area.adjust=rep(Area.adjust,t.steps)
   Log.area.adjust=log(Area.adjust)
-  Ct=summaryBy(Count~Time,data=Data$Count.data,FUN=sum)[,2]
+  Ct=rep(0,t.steps)
+  for(it in 1:t.steps){
+    Which.Ct.gt0=which(Data$Count.data[,"Time"]==it)
+    if(length(Which.Ct.gt0>0))Ct[it]=sum(Count[Which.Ct.gt0])
+  }
   log.Mtp1=log(max(Ct)) #lower bound on log(abundance)
   
   #summary statistics to quantify number of counts made in each time step
@@ -128,10 +135,12 @@ mcmc_CPIF<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
   #convert some of these to list format
   Count.list=Omega.list=Pi.list=Dt.old=vector('list',t.steps)
   for(it in 1:t.steps){
-    Count.list[[it]]=Count[which(Data$Count.data[,"Time"]==it)]
-    Omega.list[[it]]=Omega[Which.obs[which(Data$Count.data[,"Time"]==it)]]
-    Pi.list[[it]]=Pi.obs.stnd[Time.indices[it,1]:Time.indices[it,2],it]
-    Dt.old[[it]]=0.5*Control$MH.omega[it]^2*d_logP_omega(Omega.list[[it]],Count.list[[it]],Mu=Omega.pred[Which.obs[Time.indices[it,1]:Time.indices[it,2]]],tau=tau.epsilon)
+    if(Nt.obs[it]>0){
+      Count.list[[it]]=Count[which(Data$Count.data[,"Time"]==it)]
+      Omega.list[[it]]=Omega[Which.obs[which(Data$Count.data[,"Time"]==it)]]
+      Pi.list[[it]]=Pi.obs.stnd[Time.indices[it,1]:Time.indices[it,2],it]
+      Dt.old[[it]]=0.5*Control$MH.omega[it]^2*d_logP_omega(Omega.list[[it]],Count.list[[it]],Mu=Omega.pred[Which.obs[Time.indices[it,1]:Time.indices[it,2]]],tau=tau.epsilon)
+    }
   }
     
   #setup process conv/RW2 space-time model
@@ -148,12 +157,11 @@ mcmc_CPIF<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
   K.obs=K[Which.obs,]
   K.obs.t=t(K.obs)
   cross.K<-crossprod(K.obs,K.obs)
+  cross.K<-crossprod(K,K)
+  Diag=diag(nrow(cross.K))*0.001
   
   for(iiter in 1:Control$iter){
     if(iiter%%1000==0)cat(paste('iteration ',iiter,' of ',Control$iter,'\n'))
-    if(iiter==1000){
-      crap=1
-    }
 
     #update total abundance
     log.N.prop=log.N+rnorm(1,0,Control$MH.N)
@@ -218,7 +226,7 @@ mcmc_CPIF<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
     #update kernel weights/REs for spatial model
     if(iiter>100){
       Dat.minus.Exp=Omega[Which.obs]-X.obs%*%Beta
-      V.eta.inv <- cross.K*tau.epsilon+tau.eta*Q
+      V.eta.inv <- cross.K*tau.epsilon+tau.eta*Q+Diag
       M.eta <- solve(V.eta.inv,tau.epsilon*K.obs.t%*%Dat.minus.Exp)
       Alpha <- M.eta + solve(chol(V.eta.inv), rnorm(length(M.eta),0,1))
       Alpha=Alpha-mean(Alpha)  #so intercept of fixed effects identifiable... note there's still implicit linear trend parameters for each alpha t-series

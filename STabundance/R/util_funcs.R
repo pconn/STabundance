@@ -279,7 +279,7 @@ d_biv_normal<-function(Tmp.vec,XY,Sigma){
 #' @export 
 #' @keywords abundance map, plot
 #' @author Paul Conn \email{paul.conn@@noaa.gov}
-plot_N_map<-function(cur.t,N,Grid,highlight=NULL,cell.width,leg.title="Abundance"){
+plot_N_map<-function(cur.t,N,Grid,highlight=NULL,cell.width=1,leg.title="Abundance"){
   require(rgeos)
   require(ggplot2)
   Tmp=Grid[[1]]
