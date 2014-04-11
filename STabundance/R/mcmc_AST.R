@@ -145,16 +145,16 @@ mcmc_AST<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
     I.accept=(runif(n.obs)<exp(full.cond.new-full.cond.old))
     Mu[Which.obs[I.accept==1]]=Prop[I.accept==1]
     Accept=Accept+I.accept
-    
-    #update beta
-    Beta=t(rmvnorm(1,XpXinvXp%*%(Mu[Which.obs]-Eta[Data$Count.data[,"Cell"]]-Gamma[Data$Count.data[,"Time"]]),XpXinv/(tau.epsilon+Prior.pars$beta.tau)))
-    
+       
     #update precision for exchangeable errors
     if(Control$fix.tau.epsilon==FALSE){
       Mu.pred=X.obs%*%Beta+Eta[Data$Count.data[,"Cell"]]+Gamma[Data$Count.data[,"Time"]]
       Diff=Mu[Which.obs]-Mu.pred
       tau.epsilon <- rgamma(1,0.5*n.obs + Prior.pars$a.eps, as.numeric(crossprod(Diff,Diff))*0.5 + Prior.pars$b.eps)
     }
+    
+    #update beta
+    Beta=t(rmvnorm(1,XpXinvXp%*%(Mu[Which.obs]-Eta[Data$Count.data[,"Cell"]]-Gamma[Data$Count.data[,"Time"]]),XpXinv/(tau.epsilon+Prior.pars$beta.tau)))
     
     #update kernel weights/REs for spatial model
     Dat.minus.Exp=Mu[Which.obs]-X.obs%*%Beta-Gamma[Data$Count.data[,"Time"]]
@@ -171,11 +171,11 @@ mcmc_AST<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
     M.eta <- solve(V.gamma.inv,tau.epsilon*XT.t%*%(Dat.minus.Exp))
     Gamma <- M.eta + solve(chol(V.gamma.inv),rnorm(t.steps,0,1))
     #center using eq 2.30 of Rue and Held
-    #Gamma <- Gamma - V.gamma.inv %*% A.t %*% solve(A %*% V.gamma.inv %*% A.t,A %*% Gamma)
-    Gamma=Gamma-mean(Gamma)  #just center first moment so no confounding with fixed effect intercept  
+    Gamma <- Gamma - V.gamma.inv %*% A.t %*% solve(A %*% V.gamma.inv %*% A.t,A %*% Gamma)
+    #Gamma=Gamma-mean(Gamma)  #just center first moment so no confounding with fixed effect intercept  
     #update tau.gamma
     tau.gamma <- rgamma(1,t.steps*0.5 + Prior.pars$a.gamma, as.numeric(crossprod(Gamma,QT %*% Gamma)*0.5) + Prior.pars$b.gamma)
-    
+   
     #adapt proposal distributions if Control$adapt=TRUE
     if(Control$adapt==TRUE & iiter%%100==0){
       Diff=Accept-Accept.old

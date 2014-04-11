@@ -158,7 +158,7 @@ We conducted a small simulation study where simulation replicates varied by (1) 
   n = 10,000(1+2 \sum_k \hat{\rho}_k)\hat{\sigma}_N^2 \hat{N}^{-2},
 \end{eqnarray*}
 where $\hat{\rho}_k$ indicates lag $k$ autocorrelation, $\hat{\sigma}_N^2$ gives posterior variance for
-estimated abundance, and $\hat{N}$ gives the posterior mean for abundance.  We then adjusted this estimate upwards depending on appearance of MCMC trace plots to arrive at MCMC run times (Table \ref{tab:run_times}).  Including a 10,000 iteration ``burn-in" and a 5,000 iteration tuning phase for each analysis, we then estimated requisite run times for each analysis type for the two levels of sample coverage (1 or 5 transects; Table \ref{tab:run_times}).
+estimated abundance, and $\hat{N}$ gives the posterior mean for abundance.  We then adjusted this estimate upwards depending on appearance of MCMC trace plots to arrive at MCMC run times (Table \ref{tab:run_times}). Including a ``burn-in" phase and a 5,000 iteration tuning phase for each analysis, we then estimated requisite run times for each analysis type for the two levels of sample coverage (1 or 5 transects; Table \ref{tab:run_times}).
 
 \begin{table}
 \caption{\setstretch{2} Execution details for MCMC analysis of spatio-temporal abundance data as a function of estimation model and number of transects.  Estimation model and transects/time step are indicated in columns (e.g., AST-5 indicates the AST model applied to data from 5 transects/time step).  Presented are the minimum number of MCMC iterations needed to achieve a Monte Carlo CV of 0.01 (`Min iterations'), the number of MCMC iterations used to summarize the posterior distribution (`MCMC length'), the number of additional iterations at the beginning of the MCMC chain that are discarded as a burn-in (`Burn-in'), the number of additional iterations conducted per simulation in order to tune Metropolis-Hastings proposal distributions prior to start of the main MCMC run (`Adapt length'), the estimated number of hours per simulation (`Hrs/sim'), and the actual number of simulations that were analyzed for each estimation model (`\# Sims').}
@@ -168,17 +168,17 @@ estimated abundance, and $\hat{N}$ gives the posterior mean for abundance.  We t
  & \multicolumn{8}{c}{Estimation model} \\
  & AST-1 & AST-5 & CPIF-1 & CPIF-5 & OPRS-1 & OPRS-5 & STPC-1 & STPC-5 \\
 \hline \hline
-Min iterations:  & 13,000 & 1,014 & 32,700 & 80 & 45,081 & 6,218 & 52,000 & 320 \\
-MCMC length: & 20,000  & 10,000 & 100,000 & 10,000 & 50,000 & 10,000 & 100,000 & 10,000 \\
-Burn-in: & 10,000 & 10,000 & 10,000 & 10,000 & 10,000 & 10,000 & 10,000 & 10,000 \\
+Min iterations:  & 13,000 & 1,014 & 81 & 6 & 45,081 & 6,218 & 256 & 52 \\
+MCMC length: & 20,000  & 10,000 & 10,000 & 10,000 & 50,000 & 10,000 & 10,000 & 10,000 \\
+Burn-in: & 10,000 & 10,000 & 5,000 & 5,000 & 10,000 & 10,000 & 5,000 & 5,000 \\
 Adapt length: & 5,000 & 5,000 & 5,000 & 5,000 & 5,000 & 5,000 & 5,000 & 5,000 \\
-Hrs/sim:   & 0.23 & 0.17 & 1.53 & 0.33 & 71.5 & 27.5 & 0.77 & 0.17 \\
-\# Sims:  & 100 & 100 & 10 & 100 & 0 & 10 & 10 & 100 \\
+Hrs/sim:   & 0.23 & 0.17 & 1.5 & 1.5 & 71.5 & 27.5 & 1.5 & 1.5 \\
+\# Sims:  & 100 & 100 & 19 & 19 & 0 & 10 & 19 & 19 \\
 \hline
 \end{tabular}
 \end{table}
 
-\hspace{.5in} Examination of Table \ref{tab:run_times} indicated extremely slow run times for the OPRS model, and that longer run times would generally be needed when there were fewer data (i.e. when there was only one transect for time step).  We thus limited the number of simulation replicates analyzed for certain combinations of estimation model and sample coverage (Table \ref{tab:run_times}).  For instances where only 10 simulations were analyzed, we chose data sets to cover a range of $\delta$ values (by selecting simulations $5, 15, 25, \hdots, 95$).
+\hspace{.5in} Examination of Table \ref{tab:run_times} indicated extremely slow run times for the OPRS model, and that the AST model was appreciably faster than the CPIF or STPC models.  Longer run times were needed when there were fewer data (i.e. when there was only one transect for time step).  We thus limited the number of simulation replicates analyzed for certain combinations of estimation model and sample coverage (Table \ref{tab:run_times}).  For instances where only 10 simulations were analyzed, we chose data sets to cover a range of $\delta$ values (by selecting simulations $5, 15, 25, \hdots, 95$); for those employing 19 simulations, simulations $5, 10, 15, \hdots, 95$ were selected.
 
 
 \subsection{Results}

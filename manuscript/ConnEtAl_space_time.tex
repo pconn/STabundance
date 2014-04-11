@@ -182,7 +182,7 @@ temporal structure (i.e., omitting space-time interactions).  To induce this str
 The implication of this additive construction is that the temporal random effect $\gamma_t$ is uniformly applied to each sample unit; if habitat covariates were to remain constant, non-zero $\gamma_t$ effects would lead to uniform expected increases or decreases in log abundance across the entire landscape (as opposed to redistribution of abundance).
 
 We model spatial structure by distributing knots across the landscape and imposing a process convolution model for $\eta_s$ as in eqn. \ref{eq:reduced-spat}.  In this case, the random spatial effects, $\boldsymbol{\alpha}$, represent weights associated with each knot locations, and are given independent Gaussian prior distributions.
-For $\gamma_t$, we specify an RW2-ICAR prior distribution, which is a second-order Markov random walk time series process \citep{RueHeld2005}.  This formulation imposes a smoother temporal trend in latent log abundance than would a first-order Markov random walk (or RW1) process.  We describe a Bayesian implementation of this model in Appendix S1.
+For $\gamma_t$, we specify an RW2 prior distribution, which is a second-order Markov random walk time series process \citep{RueHeld2005}.  This formulation imposes a smoother temporal trend in latent log abundance than would a first-order Markov random walk (or RW1) process.  We describe a Bayesian implementation of this model in Appendix S1.
 
 \subsection{A spatio-temporal process convolution (STPC) model}
 
@@ -192,13 +192,13 @@ effect, $\kappa_{s,t}$:
 \begin{eqnarray*}
   \boldsymbol{\mu} & = & {\bf X} \boldsymbol{\beta} + \boldsymbol{\kappa} + \boldsymbol{\epsilon}_t.
 \end{eqnarray*}
-We will write the $\boldsymbol{\kappa}$ as a function of spatio-temporal parameters on a reduced dimensional space associated with $m$ knots placed evenly across the landscape, writing
+We will write the $\boldsymbol{\kappa}$ as a function of spatio-temporal parameters on a reduced dimensional space associated with $m$ knots placed across the landscape, such that
 \begin{eqnarray*}
-  \boldsymbol{\kappa} = {\bf L} \boldsymbol{\alpha}.
+  \boldsymbol{\kappa} = {\bf L^*} (\boldsymbol{\alpha}).
 \end{eqnarray*}
-Using this setup, there are a total of $mT$ $\alpha_{k,t}$ parameters (one for each knot and time step), and ${\bf L}$ is an $(mT \times mT)$ block-diagonal matrix, composed of $T$ copies of the ${\bf K}$ matrix from the previous section.  We allow the
-$\alpha_{k,t}$ parameters to change smoothly over time by imposing an RW2-ICAR distribution on $\{ \alpha_{k,1}, \alpha_{k,2} \hdots \alpha_{k,T} \}$ for each knot $k$.
-This is a conceptually similar approach to that used by \citet{CalderEtAl2002} to describe space-time structure in ozone concentration, and is described further in Appendix S1.
+Using this setup, there are a total of $mT$ $\alpha_{k,t}$ random effects (one for each knot and time step), and ${\bf L}$ is a sparse $(ST \times mT)$, whose nonzero elements consist of rearranged entries from the ${\bf K}$ matrix defined in the previous section.  We allow the
+$\alpha_{k,t}$ parameters to change smoothly over time by imposing an RW2 prior on $\{ \alpha_{k,1}, \alpha_{k,2} \hdots \alpha_{k,T} \}$ for each knot $k$.
+This is a conceptually similar approach to that used by \citet{CalderEtAl2002} and \citet{Higdon2002} to describe space-time structure in ozone concentrations, and is described further in Appendix S1.
 
 \subsection{Resource selection}
 
@@ -263,7 +263,7 @@ We express habitat preference ($\omega_{s,t}$) values using a log-linear formula
   \boldsymbol{\omega_t} & = & {\bf o} + {\bf X}_t \boldsymbol{\beta} + \boldsymbol{\kappa}_t + \boldsymbol{\epsilon_t}.
 \end{eqnarray*}
 Here, ${\bf o}$ denote offsets accounting for possible differences in the size of sample units; by convention we do not include an intercept in the regression part of the model as it is not identifiable.
-As in the spatio-temporal process convolution model, we include temporally-evolving spatio-temporal random effects $\boldsymbol{\kappa}_t$ by convolving bivariate normal kernels where the kernel weights change according to an RW2-ICAR process.
+As in the spatio-temporal process convolution model, we include temporally-evolving spatio-temporal random effects $\boldsymbol{\kappa}_t$ by convolving bivariate normal kernels where the kernel weights change according to an RW2 process.
 
 \section{Computing}
 
@@ -277,8 +277,7 @@ In order to examine the utility of each of our proposed modeling approaches, we 
 \begin{enumerate}
  \item Simulate spatio-temporal variation in a hypothetical habitat covariate across a landscape,
  \item Simulate spatio-temporal animal abundance across the simulated landscape according to the specified data generating structure,
- \item Simulate transect placement across each landscape and time step,
- \item Simulate transect counts, and
+ \item Simulate transect placement and transect counts across each landscape and time step, and
  \item Conduct Bayesian inference with each of our estimation models (AST,STPC,OPRS,CPIF).
 \end{enumerate}
 We now briefly describe each of the enumerated steps in turn.  A fuller description is provided in Appendix S2.
@@ -297,17 +296,30 @@ We used three different models to generate spatio-temporal count data from simul
 \end{enumerate}
 The OPRD model used the CPRD structure to generate data, but on the full grid (i.e. $30 \times 30$) grid than was used for analysis (i.e. $20 \times 20$).  By contrast, CPRD and CPUD used a smaller, $20 \times 20$ grid (centered in the middle of the $30 \times 30$ grid) to simulate abundance.  In effect, the OPRD generating model allows abundance to shift in and out of the area being surveyed, while CPRD and CPUD do not.  For each generating model, simulations were configured such that animals had preference for intermediate values of the habitat covariate (see Appendix S2).
 
-\subsubsection{Simulating transect surveys}
+\subsubsection{Simulating transect surveys \& animal counts}
 
-We considered two possibilities for 
-
-\subsubsection{Generating transect counts}
+At each time step of simulation, transects were simulated as straight, vertical lines across the entire study area, beginning at randomly selected grid cells along the southern terminus (see e.g. Fig. \ref{fig:sim_generic_maps}).  Each transect thus covered 20 grid cells; we configured simulations such that transects covered 5\% of each grid cell they passed through.  Transect placement was re-randomized at each time step.  Following selection of the grid cells and times where sampling occurred, we drew animal counts from a Poisson distribution at times and locations where sampling was conducted:
+\begin{eqnarray*}
+  C_{s,t} & \sim & \text{Poisson}(0.05 \lambda_{s,t}).
+\end{eqnarray*}
 
 \subsubsection{Estimating abundance from simulated data}
+
+Depending upon simulation configuration, we used anywhere between one and four estimation models (see Appendix S2) to estimate animal abundance for each dataset.  These included AST, CPIF, OPRS, and STPC (for further detail on these models and prior distributions used, see Appendix S1).  Each model was provided with the spatio-temporal covariates used in in abundance generation for use in the linear predictor of each estimation model.  Following completion of all simulation runs, we tabulated proportion relative bias, coefficient of variation, and mean squared error of abundance estimate(s).  Calculations were performed slightly differently depending on whether simulation and estimation models were open or closed.  For instance, for three of the estimation models (AST, OPRS, and STPC), there were separate posterior distributions of abundance for each time step.  To produce a single, ``best" average estimate of abundance ($\bar{N}$) over the whole time frame,
+we used numerical optimization to solve for the $\bar{N}$ that minimizes
+\begin{eqnarray*}
+  E \left[ \sum_t (\hat{N}_t^{(m)} - \bar{N})^2 | \text{Data} \right],
+\end{eqnarray*}
+where $\hat{N}_t^{(m)}$ is a posterior realization of abundance at time $t$ (e.g. at the $m$th iteration of the Markov chain).  This approach seeks to minimize Bayes risk.  For further information on estimator performance calculations, see Appendix S2.
 
 \subsection{Generic simulation results}
 
 Proportion relative bias (Fig. \ref{fig:bias_generic})
+
+\section{Spotted seal simulation study}
+
+
+
 
 \section{Example: Spotted seals in the Bering Sea}
 

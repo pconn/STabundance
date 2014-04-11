@@ -24,6 +24,8 @@
 #'  "b.eps" beta parameter for tau_epsilon~Gamma(alpha,beta) (default = 0.01)
 #'  "a.eta" alpha param for gamma prior precision of spatio-temporal model
 #'  "b.eta" beta param for gamma prior precision of spatio-temporal process
+#'  "beta0.tau.rw2" prior precision for knot intercepts in rw2 model
+#'  "beta1.tau.rw2" prior precision for knot slopes in rw2 model
 #'   If provided, all values for Prior.pars need to be specified
 #' @return returns a list with the following objecs: 
 #' 	MCMC: A list object containing posterior samples;
@@ -39,7 +41,6 @@
 mcmc_CPIF<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
   require(Matrix)
   require(mvtnorm)
-  source("c:/users/paul.conn/git/STabundance/STabundance/R/util_funcs.R")
   
   #set.seed(12344)
   
@@ -51,9 +52,13 @@ mcmc_CPIF<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
                     a.eps=1,
                     b.eps=0.01,
                     a.eta=1,
-                    b.eta=0.01)
+                    b.eta=0.01,
+                    beta0.tau.rw2=1,
+                    beta1.tau.rw2=10)
   }
   if(is.null(Area.adjust))Area.adjust=rep(1,S)
+  
+  if(sum(Area.adjust<=0)>0)cat("ERROR: sample unit areas must be >0")
   
   #sort count data by time and cell so that some of the list to vector code will work right
   Data$Count.data=Data$Count.data[order(Data$Count.data$Time,Data$Count.data$Cell),]
@@ -144,23 +149,46 @@ mcmc_CPIF<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
   }
     
   #setup process conv/RW2 space-time model
+  n.knots=ncol(Data$K)
   Q1=linear_adj_RW2(t.steps) #precision matrix
   Q=Q1
-  n.knots=ncol(Data$K)
-  K=Data$K
   for(i in 2:n.knots)Q=bdiag(Q,Q1)  #precision matrix a block diagonal matrix
-  for(i in 2:t.steps)K=bdiag(K,Data$K) 
   Q.t=t(Q)
+  K=matrix(0,S*t.steps,n.knots*t.steps)
+  #for(i in 2:t.steps)K=bdiag(K,Data$K) 
+  #rearrage K to grab right elements of alpha
+  cur.row=0
+  for(it in 1:t.steps){
+    for(iknot in 1:n.knots){
+      K[(cur.row+1):(cur.row+S),(iknot-1)*t.steps+it]=Data$K[,iknot]
+    }
+    cur.row=cur.row+S
+  }
+  K=Matrix(K)
   Alpha=rrw(tau.eta*Q) #initial values for space-time random effects
   #Eta=K%*%Alpha
   Eta=rep(0,n.ST) #start Eta at 0
-  K.obs=K[Which.obs,]
-  K.obs.t=t(K.obs)
-  cross.K<-crossprod(K.obs,K.obs)
+  #K.obs=K[Which.obs,]
+  #K.obs.t=t(K.obs)
+  K.t=t(K)
   cross.K<-crossprod(K,K)
   Diag=diag(nrow(cross.K))*0.001
+  X.rw2=matrix(0,n.knots*t.steps,2*n.knots)
+  for(iknot in 1:n.knots){
+    X.rw2[((iknot-1)*t.steps+1):((iknot-1)*t.steps+t.steps),iknot]=1
+    X.rw2[((iknot-1)*t.steps+1):((iknot-1)*t.steps+t.steps),n.knots+iknot]=c(1:t.steps)
+  }
+  X.rw2.t=t(X.rw2)
+  A=solve(crossprod(X.rw2),X.rw2.t) #for conditioning by kriging
+  A.t=t(A)
+  KX.rw2=K%*%X.rw2
+  KX.rw2.t=t(KX.rw2)
+  KXpX.rw2=crossprod(KX.rw2)
+  Sigma.inv.rw2=Matrix(diag(c(rep(Prior.pars$beta0.tau.rw2,n.knots),rep(Prior.pars$beta1.tau.rw2,n.knots))))
+  Beta.rw2=rep(0,ncol(X.rw2))
   
   for(iiter in 1:Control$iter){
+    cat(paste('iter ',iiter,'\n'))
     if(iiter%%1000==0)cat(paste('iteration ',iiter,' of ',Control$iter,'\n'))
 
     #update total abundance
@@ -213,29 +241,31 @@ mcmc_CPIF<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
 
     #plot_N_map(1,matrix(Omega[1:400,1],400,1),Grid=Data$Grid,leg.title="Abundance")
     
-    #update beta
-    Beta=t(rmvnorm(1,XpXinvXp%*%(Omega[Which.obs]-Eta[Which.obs]-Log.area.adjust[Which.obs]),XpXinv/(tau.epsilon+Prior.pars$beta.tau)))
-    
     #update precision for exchangeable errors
-    if(Control$fix.tau.epsilon==FALSE & iiter>100){
+    if(Control$fix.tau.epsilon==FALSE){
       Omega.pred=X.obs%*%Beta+Eta[Which.obs]+Log.area.adjust[Which.obs]
       Diff=Omega[Which.obs]-Omega.pred
       tau.epsilon <- rgamma(1,n.obs/2 + Prior.pars$a.eps, as.numeric(crossprod(Diff,Diff))*0.5 + Prior.pars$b.eps)
-    }
+    }    
+    #update beta
+    Beta=t(rmvnorm(1,XpXinvXp%*%(Omega[Which.obs]-Eta[Which.obs]-Log.area.adjust[Which.obs]),XpXinv/(tau.epsilon+Prior.pars$beta.tau)))
     
-    #update kernel weights/REs for spatial model
-    if(iiter>100){
-      Dat.minus.Exp=Omega[Which.obs]-X.obs%*%Beta
-      V.eta.inv <- cross.K*tau.epsilon+tau.eta*Q+Diag
-      M.eta <- solve(V.eta.inv,tau.epsilon*K.obs.t%*%Dat.minus.Exp)
-      Alpha <- M.eta + solve(chol(V.eta.inv), rnorm(length(M.eta),0,1))
-      Alpha=Alpha-mean(Alpha)  #so intercept of fixed effects identifiable... note there's still implicit linear trend parameters for each alpha t-series
-      Eta=K%*%Alpha
-     #Eta=0*Eta
-      #update tau.eta
-      tau.eta <- rgamma(1, length(M.eta)*0.5 + Prior.pars$a.eta, as.numeric(crossprod(Alpha,Q %*% Alpha)*0.5) + Prior.pars$b.eta)    
-      #tau.eta=100
-    }
+    #update kernel weights/REs for space-time model
+    #first update mean and slope for each knot
+    Dat.minus.Exp=Omega-X.pred%*%Beta-Log.area.adjust-K%*%Alpha
+    V.inv.rw2=KXpX.rw2*tau.epsilon+Sigma.inv.rw2
+    Beta.rw2=t(rmvnorm(1,solve(V.inv.rw2,KX.rw2.t%*%Dat.minus.Exp*tau.epsilon),as.matrix(solve(V.inv.rw2))))
+    #now update alpha and correct for mean=0 and slope=0 constraints
+    Dat.minus.Exp=Omega-X.pred%*%Beta-Log.area.adjust-KX.rw2%*%Beta.rw2
+    V.eta.inv <- cross.K*tau.epsilon+tau.eta*Q
+    M.eta <- solve(V.eta.inv,tau.epsilon*K.t%*%Dat.minus.Exp)
+    Alpha <- M.eta + solve(chol(V.eta.inv), rnorm(length(M.eta),0,1))
+    Alpha=Alpha-V.eta.inv %*% A.t %*% solve(A %*% V.eta.inv %*% A.t,A%*%Alpha)    
+    Eta=K%*%(X.rw2%*%Beta.rw2+Alpha)
+ 
+    #update tau.eta
+    tau.eta <- rgamma(1, length(M.eta)*0.5 + Prior.pars$a.eta, as.numeric(crossprod(Alpha,Q %*% Alpha)*0.5) + Prior.pars$b.eta)    
+    #tau.eta=100
     
     #adapt proposal distributions if Control$adapt=TRUE
     if(Control$adapt==TRUE & iiter%%100==0){

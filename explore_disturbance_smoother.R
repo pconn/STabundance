@@ -1,5 +1,6 @@
 #test out kalman smoother forward backward algorithm
 library(mvtnorm)
+library(Matrix)
 t.steps=100
 S=10
 Y=matrix(0,S,t.steps)
@@ -31,8 +32,13 @@ Z.true=Z
 Y.true=Y
 P[[1]]=1*diag(S)
 
-W.plus.z=matrix(rnorm(S*t.steps),S,t.steps)
-W.plus.y=matrix(rnorm(S*t.steps),S,t.steps)
+tau.epsilon=100
+tau.varepsilon=100000
+diag(Q)=1/sqrt(tau.epsilon)
+diag(R)=1/sqrt(tau.varepsilon)
+
+W.plus.z=matrix(rnorm(S*t.steps,0,1/sqrt(tau.varepsilon)),S,t.steps)
+W.plus.y=matrix(rnorm(S*t.steps,0,1/sqrt(tau.epsilon)),S,t.steps)
 Y.plus=matrix(0,S,t.steps)
 Z.plus=Y.plus
 
@@ -76,3 +82,7 @@ for(it in 1:t.steps)
 plot(Y.true[3,])
 lines(Y[3,],col='red')
 lines(Z[3,],col='blue')
+
+
+plot(Y[1,],col='red',type="l")
+lines(Z[1,],col='blue')

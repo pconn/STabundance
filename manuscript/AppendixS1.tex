@@ -105,7 +105,7 @@ In particular, time-specific vectors of the log of abundance intensity ($\boldsy
 Here, the $1 \times m$ dimensional vector $\boldsymbol{\alpha}$ holds spatial random effects on a reduced parameter space.  The reduced parameter space is achieved by distributing a total of $m$ knots evenly across the landscape, and associating a Gaussian kernel with each such knot. Under this formulation, the random effects $\boldsymbol{\alpha}$ are equivalent to weights on each of the Gaussian kernels.  The $S \times m$ dimensional matrix ${\bf K}$ maps the random effects (or weights) to $S$-dimensional space.  The entries in ${\bf K}$ are proportional to distance-specific kernel densities used to interpolate between the $m$ knots and the $S$ spatio-temporal locations being modeled.  With rich datasets, it is possible to computationally intensive algorithms to optimize values for the elements of ${\bf K}$ (and to induce anisotropy), but we will typically not be so lucky in ecological applications.  Thus, in subsequent examples we adopt the commonly used practice of setting the standard deviations for each kernel ($\sigma$) equal to the distance between knot locations, and setting the $i$th row and $j$th column of ${\bf K}$ to $N(d_{ij}; 0,\sigma^2)$, where $N$ denotes a standard Gaussian probability density function and $d_{ij}$ gives the distance from the centroid of sampling unit $i$ to the location of knot $j$.  The elements of ${\bf K}$ are then renormalized so that rows sum to 1.0.
 As is typical in such applications, we model the random effects $\boldsymbol{\alpha}$, as iid Gaussian with mean zero and precision $1/\tau_\eta$.
 
-\hspace{.5in} We account for temporal autocorrelation by assigning an RW2-ICAR($\tau_\gamma$) prior distribution \citep[see e.g.][section 3.4]{RueHeld2005} to temporal random effects.  Implemented using Gaussian Markov random field (GMRF) machinery \citep[again see][for a thorough treatment]{RueHeld2005}, this prior imposes temporal dependence among the $\boldsymbol{\gamma}$  and a greater degree of smoothness than a simpler RW1 structure (a potentially useful feature for analysis of typically sparse ecological datasets).
+\hspace{.5in} We account for temporal autocorrelation by assigning an RW2($\tau_\gamma$) prior distribution \citep[see e.g.][section 3.4]{RueHeld2005} to temporal random effects.  Implemented using Gaussian Markov random field (GMRF) machinery \citep[again see][for a thorough treatment]{RueHeld2005}, this prior imposes temporal dependence among the $\boldsymbol{\gamma}$  and a greater degree of smoothness than a simpler RW1 structure (a potentially useful feature for analysis of typically sparse ecological datasets).
 
 \hspace{.5in} We must of course assign prior distributions to the lowest level parameters in $\boldsymbol{\theta}$ in order to conduct Bayesian inference.  Our strategy is to use the following choices:
 \begin{eqnarray*}
@@ -216,39 +216,85 @@ As before, we will write the $\boldsymbol{\kappa}$ as a function of spatio-tempo
 \begin{eqnarray*}
   \boldsymbol{\kappa} = {\bf L} \boldsymbol{\alpha}.
 \end{eqnarray*}
-However, in this case, there are a total of $mT$ $\alpha_{kt}$ parameters (one for each knot and time step), and ${\bf L}$ is an $(mT \times mT)$ block-diagonal matrix, composed of $T$ copies of the ${\bf K}$ matrix from the previous section.  We allow the
-$\alpha_{kt}$ parameters to change smoothly over time by supposing that
+However, in this case, there are a total of $mT$ $\alpha_{kt}$ values (one for each knot and time step), and ${\bf L}$ is an $(ST \times mT)$ matrix used to map spatio-temporal grid cells to respective $\alpha_{kt}$ values.  The entries of ${\bf L}$ include values from the ${\bf K}$ matrix from the previous section, rearranged to pull off appropriate values of $\boldsymbol{\alpha}$, and is constructed as follows:
 \begin{eqnarray*}
-  [\alpha_{k1} \alpha_{k2} \hdots \alpha_{kt}] \sim RW2-ICAR(\tau_\alpha).
+  {\bf L} & = & \left[ \begin{array}{cccccccc}  
+      K_{11} & {\bf 0}_{T-1} & K_{12} & {\bf 0}_{T-1} & \hdots & K_{1m} & {\bf 0}_{T-2} & 0\\
+      K_{21} & {\bf 0}_{T-1} & K_{22} & {\bf 0}_{T-1} & \hdots & K_{2m} & {\bf 0}_{T-2} & 0\\
+      \vdots &  \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+      K_{S1} & {\bf 0}_{T-1} & K_{S2} & {\bf 0}_{T-1} & \hdots & K_{Sm} & {\bf 0}_{T-2} & 0\\
+      0 & K_{11} & {\bf 0}_{T-1} & K_{12} & {\bf 0}_{T-1} & \hdots & K_{1m} & {\bf 0}_{T-2} \\
+      0 & K_{21} & {\bf 0}_{T-1} & K_{22} & {\bf 0}_{T-1} & \hdots & K_{2m} & {\bf 0}_{T-2} \\
+      \vdots &  \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+      0 & K_{S1} & {\bf 0}_{T-1} & K_{S2} & {\bf 0}_{T-1} & \hdots & K_{Sm} & {\bf 0}_{T-2} \\
+      \vdots &  \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+      \vdots &  \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+      {\bf 0}_{T-1} & K_{S1} & {\bf 0}_{T-1} & K_{S2} & {\bf 0}_{T-1} & \hdots & {\bf 0}_{T-1} & K_{Sm} \\
+  \end{array}   \right].
 \end{eqnarray*}
-This is a conceptually similar approach to that used by \citet{CalderEtAl2002} to describe space-time structure in ozone concentration.  We specify prior distributions for regression and Gaussian precision parameters in the same manner as for the AST model (cf. eqn. \ref{eq:priors}).
+Here, ${\bf 0}_{x}$ denotes an all zero row vector of length $x$.  We allow the
+$\alpha_{kt}$ parameters to change smoothly over time by giving $\alpha_{kt}$ values at each knot $k$ an RW2 Gaussian Markov random field prior distribution \citep{RueHeld2005}.  However, the RW2 prior is degenerate by an order of two; we restore propriety by following the suggestion of \citet{JohnsonEtAl2013b} and including separate intercept and slope terms for the $\alpha_{kt}$ parameters at each knot, giving these intercept and slope terms proper priors.  In particular, we model
+\begin{eqnarray*}
+  \boldsymbol{\alpha} & = & {\bf X}_0^{rw2} \boldsymbol{\beta}_0^{rw2} + {\bf X}_1^{rw2} \boldsymbol{\beta}_1^{rw2}
+   + \boldsymbol{\varpi},
+\end{eqnarray*}
+where ${\bf X}_0^{rw2}$ is a design matrix for the intercept term associated with each knot, ${\bf X}_1^{rw2}$ is an design matrix associated with the linear slope effect for each knot,  $\boldsymbol{\beta}_0^{rw2}$ give intercepts for each knot, $\boldsymbol{\beta}_1^{rw2}$ give slope parameters for each knot, and $\boldsymbol{\varpi} \sim \mathcal{N}(\bf 0,\tau_\alpha {\bf Q}^*) $ denote random effects with precision parameter $\tau_\gamma$ and a $(mT \times mT)$ block diagonal structure matrix:
+\begin{eqnarray*}
+  {\bf Q}^* & = & \left[ \begin{array}{cccc}
+      {\bf Q} & {\bf 0} & \hdots & {\bf 0} \\
+      {\bf 0} & {\bf Q} & \hdots & {\bf 0} \\
+      \vdots &  \vdots & \ddots & \vdots \\
+      {\bf 0} & {\bf 0} & \hdots & {\bf Q} \\
+  \end{array}   \right]
+\end{eqnarray*}
+({\bf Q} being the ``standard" RW2 structure matrix for a single time series).  For each knot $k$, the $\boldsymbol{\varpi}$ are constrained to have a mean and slope of 0.
+We specify prior distributions for regression and Gaussian precision parameters in the same manner as for the AST model (cf. eqn. \ref{eq:priors}), but impose informative priors on the $\boldsymbol{\beta}_0^{rw2}$ and $\boldsymbol{\beta}_1^{rw2}$ parameters.  In particular, for all of our applications, we let each of element of $\boldsymbol{\beta}_0^{rw2}$ have a $\mathcal{N}(0,\tau_{\beta_0}^{-1})$ prior distribution, and each element of $\boldsymbol{\beta}_1^{rw2}$ have a $\mathcal{N}(0,\tau_{\beta_1}^{-1})$ prior.  We selected $\tau_{\beta_0} = 1$ and $\tau_{\beta_1} = 10$ so as to permit considerable unmodeled spatio-temporal variation in the log of abundance intensity, while providing enough structure to limit the chance of extrapolating ``past the range of observed data" for times and locations where the density of sampling efforts is low.
 
 \subsection{Bayesian analysis of the STPC model}
 
-Bayesian analysis of the STPC model largely follows the approach used for AST model, with the exception that instead of separate spatial ($\boldsymbol{\eta}$) and temporal ($\boldsymbol{\gamma}$) effects, there is a single spatio-temporal effect, $\boldsymbol{\kappa}$.  In fact, steps 1-3 of the STPC Gibbs sampler are exactly the same as for the AST model, as is the approach for generating posterior predictions of abundance, and simply require placing $\boldsymbol{\eta}+\boldsymbol{\gamma}$ with $\boldsymbol{\kappa}$.  The remaining steps are as follows:
+Bayesian analysis of the STPC model largely followed the approach used for AST model, with the exception that instead of separate spatial ($\boldsymbol{\eta}$) and temporal ($\boldsymbol{\gamma}$) effects, there is a single spatio-temporal effect, $\boldsymbol{\kappa}$.  In fact, steps 1-3 of the STPC Gibbs sampler are exactly the same as for the AST model, as is the approach for generating posterior predictions of abundance, and simply require placing $\boldsymbol{\eta}+\boldsymbol{\gamma}$ with $\boldsymbol{\kappa}$.  The remaining steps are as follows:
 
-\underline{4. Updating $\boldsymbol{\alpha}$}
+\underline{4. Updating $\boldsymbol{\beta}_0^{rw2}$ and $\boldsymbol{\beta}_0^{rw2}$}:
 
-The full conditional distribution for $\boldsymbol{\alpha}$ is available in closed form as
-\begin{equation*}
-  [\boldsymbol{\alpha} | \cdot] \equiv \textrm{MVN}({\bf m}_{\alpha},{\bf v}_{\alpha}),
-\end{equation*}
-and can also be simulated from directly.  The variance-covariance matrix $v_{\alpha}$ of the full conditional can be written as
-\begin{equation*}
-  {\bf v}_{\alpha} = ({\bf L}^{\prime}{\bf L} \tau_\epsilon + \tau_\eta {\bf Q})^{-1},
-\end{equation*}
-where ${\bf Q}$ here gives a $mT \times mT$ block diagonal matrix, whose block elements are equal to structure matrices associated with the RW2-ICAR process \citep[see][for instructions on how to construct this matrix]{RueHeld2005}.  The mean of the full conditional is given by
-\begin{equation*}
-  {\bf m}_{\alpha} = {\bf v}_\alpha \tau_\epsilon {\bf L}^\prime (\boldsymbol{\mu}- {\bf X} \boldsymbol{\beta} - \boldsymbol{\kappa})
-\end{equation*}
-As in previous steps, we only use surveyed sample units to construct the elements of each matrix and vector included in this full conditional.
+To update knot-specific intercept and slope parameters, we first let ${\bf X}_{rw2} = [{\bf X}_0^{rw2} \hspace{2mm} {\bf X}_1^{rw2}]$, $\boldsymbol{\beta}_{rw2}=[\boldsymbol{\beta}_0^{rw2} \hspace{2mm} \boldsymbol{\beta}_1^{rw2}]^\prime$, and $\Sigma^{-1} = \mathcal{D}({\bf 1} \tau_{\beta_0} \hspace{2mm} {\bf 1} \tau_{\beta_1})$, where $\mathcal{D}$ denotes a diagonal matrix, and ${\bf 1}$ is a column vector of length $m$. The full conditional distribution for $\boldsymbol{\beta}_{rw2}$ is then available in closed form as
+\begin{eqnarray*}
+  [\boldsymbol{\beta}_{rw2} | \cdot] \equiv \textrm{MVN}({\bf m}_{b},{\bf v}_{b}) \text{, where}
+\end{eqnarray*} 
+\begin{eqnarray*}
+  {\bf v}_{b}^{-1} & = & ({\bf L}{\bf X}_{rw2})^\prime ({\bf L}{\bf X}_{rw2}) \tau_\epsilon + \Sigma^{-1} \text{, and}
+\end{eqnarray*} 
+\begin{eqnarray*}
+  {\bf m}_{b} & = & {\bf v}_b \tau_\epsilon ({\bf L}{\bf X}_{rw2})^\prime (\boldsymbol{\mu}- {\bf X} \boldsymbol{\beta} - {\bf L} \boldsymbol{\varpi}).
+\end{eqnarray*} 
 
-\underline{5. Updating $\tau_\alpha$}
+\underline{6. Updating $\boldsymbol{\varpi}$}
+
+The full conditional distribution for $\boldsymbol{\varpi}$ is also available in closed form as
+\begin{eqnarray}
+  \label{eq:varpi}
+  [\boldsymbol{\varpi} | \cdot] & \equiv & \textrm{MVN}({\bf m}_{\varpi},{\bf v}_{\varpi}),
+\end{eqnarray}
+and can also be simulated from directly.  The inverse of the variance-covariance matrix $v_{\alpha}$ for the full conditional can be written as
+\begin{eqnarray*}
+  {\bf v}_{\alpha}^{-1} & = & ({\bf L}^{\prime}{\bf L} \tau_\epsilon + \tau_\alpha {\bf Q}^*)^{-1},
+\end{eqnarray*}
+where ${\bf Q}^*$ gives the $mT \times mT$ block diagonal matrix defined in the previous section.
+The mean of the full conditional is given by
+\begin{eqnarray*}
+  {\bf m}_{\alpha} & = & {\bf v}_\alpha \tau_\epsilon {\bf L}^\prime (\boldsymbol{\mu}- {\bf X} \boldsymbol{\beta} - {\bf L}{\bf X}_{rw2}\boldsymbol{\beta}_{rw2}).
+\end{eqnarray*}
+For each knot, we impose a zero mean and zero slope constraint on the $\boldsymbol{\alpha}_{k \cdot}$ using ``conditioning by Kriging" \citep[cf.][, Eq. 2.30]{RueHeld2005}.  In particular, we first simulate $\boldsymbol{\varpi}$ using the unconstrained distribution given in Eq. \ref{eq:varpi}.  We then calculate a constrained sample $\breve{\boldsymbol{\varpi}}$ as
+\begin{eqnarray*}
+  \breve{\boldsymbol{\varpi}} & = & \boldsymbol{\varpi}-{\bf v}_{\alpha}^{-1}{\bf A}^\prime ({\bf A}{\bf v}_{\alpha}^{-1} {\bf A}^\prime)^{-1}{\bf A} \boldsymbol{\varpi},
+\end{eqnarray*}
+where ${\bf A} = ({\bf X}_{rw2}^\prime {\bf X}_{rw2})^{-1} {\bf X}_{rw2}^\prime$.
+
+\underline{6. Updating $\tau_\alpha$}
 
 The precision $\tau_\eta$ is also available in closed form and can be simulated directly via the full conditional
-\begin{equation*}
+\begin{eqnarray*}
   [\tau_\eta | \cdot] \equiv \textrm{Gamma}(0.5mT + 1.0,0.5 \boldsymbol{\alpha}^\prime \boldsymbol{\alpha} + 0.01).
-\end{equation*}
+\end{eqnarray*}
 
 \section{Open population resource selection (OPRS) model}
 
@@ -273,7 +319,7 @@ particular, we set
   \label{eq:mu.OPRS}
 \end{eqnarray}
 Here, $\Sigma_z = \tau_z^{-1} \mathcal{I}$ is a diagonal covariance matrix, ${\bf X}_{1}$ is a design matrix specific to the time step at which initial surveys are conducted, and other parameters are defined in the same manner as for the AST model. After the first time step, changes in abundance between time steps are governed by a resource selection-based transition matrix ${\bf M}_t$, and also subject to $\gamma_t$, a temporally autocorrelated random effect (as in previous models $\boldsymbol{\epsilon}_t$ is Gaussian white noise).
-The astute reader may notice that we have included Gaussian error in two places (i.e., in both eqns \ref{eq:Z} and \ref{eq:mu.OPRS}).  We also model $\gamma_t$ using an AR1 process instead of an RW2-ICAR process. These modifications were made to increase the efficiency of MCMC computation (see below).
+The astute reader may notice that we have included Gaussian error in two places (i.e., in both eqns \ref{eq:Z} and \ref{eq:mu.OPRS}).  We also model $\gamma_t$ using an AR1 process instead of an RW2 process. These modifications were made to increase the efficiency of MCMC computation (see below).
 
 \hspace{.5in}To construct an ecologically plausible transition matrix ${\bf M}_t$, we appeal to discrete-space resource selection theory employing weighted distributions \citep[cf.][]{PatilRao1978,LeleKeim2006}.  In such applications, the probability of transitioning from a particular location $a$ at time $t-1$ to location $b$ at time $t$ is given as
 \begin{eqnarray*}
