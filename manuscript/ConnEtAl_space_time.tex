@@ -314,24 +314,26 @@ where $\hat{N}_t^{(m)}$ is a posterior realization of abundance at time $t$ (e.g
 
 \subsection{Generic simulation results}
 
-Proportion relative bias (Fig. \ref{fig:bias_generic})
-
-\section{Spotted seal simulation study}
-
+Results of generic simulations indicated that the posterior mean for animal abundance produced by the four different spatio-temporal estimation models (AST, CPIF, OPRS, and STPC) were relatively unbiased (Fig. \ref{fig:bias_generic}, Table S2.2).  There was evidence for a small ($<3\%$)  positive bias for the the OPRS model, while other estimation models had bias at or near zero.  Mean squared error favored the STPC model over the other three estimation models in four out six design points examined (Table S2.2).  Coefficient of variation was extremely low for the CPIF estimation model (0.01-0.03; Table S2.2), which resulted in 90\% credible coverage substantially less than nominal (0.18-0.89) for many simulation design points.  In fact, coverage was only close to the CPIF model when a similarly structured model (CPUD) was used to simulate the data.  The CV for the STPC model was also low (0.02-0.06), leading the coverage levels between 0.34 and 0.70.  Precision for the AST model was a little higher (0.03-0.07), resulting in better (but not nominal) coverage levels between 0.73 and 0.86.  Coverage rates for the STPC model was close to nominal (0.85-0.92).
 
 
 
 \section{Example: Spotted seals in the Bering Sea}
 
 We demonstrate the utility of spatio-temporal models for estimating abundance from transect data by analyzing
-count data from spotted seals obtained from aerial transects over the Bering Sea during April and May of 2012.  Conducted by the U.S. National Marine Fisheries Service, these surveys used thermal imagery to locate seals on ice; examination of simultaneous high resolution digital photographs provided information on species composition \citep[for detailed information on survey methods, see][]{ConnEtAl2014}.  In practice, a variety of observation errors (including incomplete detection) occur with such data.  However, since our main focus is on studying the behavior of different types of spatio-temporal process models, we treat counts as if they are observed perfectly in subsequent modeling (see {\it Discussion} for further consideration of observation error).
+count data from spotted seals obtained from aerial transects over the Bering Sea during April and May of 2012 (Fig. \ref{fig:BOSS_effort}).  Conducted by the U.S. National Marine Fisheries Service (NMFS), these surveys used thermal imagery to locate seals on ice; examination of simultaneous high resolution digital photographs provided information on species composition \citep[for detailed information on survey methods, see][]{ConnEtAl2014}.  In practice, a variety of observation errors (including incomplete detection) occur with such data.  However, since our main focus is on studying the behavior of different types of spatio-temporal process models, we treat counts as if they are observed perfectly in subsequent modeling (see {\it Discussion} for further consideration of observation error).
 
-Spotted seals are dependent upon sea ice for breeding, molting, pupping, and rest. Previous analyses of Bering sea transect counts  \citep[e.g.]{ConnEtAl2014,VerHoefEtAl2014} indicated spotted seal abundance is maximized in sample units with sea ice proportions in the 0.5-0.8 range and near the southern ice edge.
+\subsection{Calibration with simulated data}
 
-justify 3-sample unit availability 'limit'
+Before fitting spatio-temporal abundance models to real data, we first conducted a small calibration exercise to (1) examine the performance of three different estimation models (AST, CPIF, STPC) when confronted with distribution and abundance similar to what we expected for spotted seals and the exact levels of sampling effort applied by NMFS in 2012, and (2) to estimate variance inflation factors.  We did not employ the OPRS estimation model for this exercise as computational expense was prohibitive.  Previous analysis of Bering sea transect counts  \citep[e.g.]{ConnEtAl2014,VerHoefEtAl2014} indicated spotted seal abundance is maximized in sample units with sea ice proportions in the 0.5-0.8 range and near the southern ice edge.  Conditioning on covariate values observed in 2012 (including daily sea ice concentrations, daily distance from southern ice edge, and distance from 1000m depth contour), we constructed models for spotted seal distribution and abundance (Appendix S2).  We then used data on the times and locations where transects were flown to sample each virtual population, and each of the three estimation models to conduct posterior inference.  Further details are provided in Appendix S2.
 
+\subsection{Spotted seal analysis}
+
+\subsection{Spotted seal results}
 
 \section{Discussion}
+
+Results of ``generic" simulations indicated that spatio-temporal estimation models were capable of producing posterior distributions of animal abundance that were unbiased and highly precise over two different levels of sampling effort and three different data generating models.  These are extremely desirable qualities in an estimation procedure for animal abundance; unfortunately, credible interval coverage was frequently too narrow (particularly for the CPIF and STPC estimation models), especially when the estimation and data generating models differed considerably.  This is perhaps not surprising, as our estimates are conditional on an assumed models.  However, it suggests the need to be careful in taking statements about precision at face value as model-conditioned standard errors will almost certainly be too small to represent the complex ``real-world" laws governing the distribution and abundance of animal abundance.  Two solutions to this predicament are evident.  First, one could conduct simulation exercises designed to mimic the real world system as closely as possible in order to generate an ad hoc variance inflation factor.  Second, one could conduct multi-model inference \citet[e.g. using Bayesian model averaging;][]{HoetingEtAl1999} to potentially remove some of the most problematic aspects of conditioning on a single model.
 
 The models developed and compared in this paper are not intended to be definitive regarding the superiority
 of different types of spatio-temporal models (e.g. descriptive versus dynamical).  Each of the models we implemented included subjective modeling choices, and it could easily be argued that further work on customizing components of individual models (e.g., by including additional spatio-temporal structure or including such structure at a different stage of the modeling hierarchy) would have influenced relative model performance.  Rather, we intend our comparison to help guide ecologists through some of the many modeling decisions and possible frameworks analysts must consider when constructing a spatio-temporal model to estimate animal abundance.
@@ -367,7 +369,7 @@ One could consider alternative formulations for $\boldsymbol{\varphi}$ that allo
 \begin{figure*}
 \begin{center}
 \includegraphics[width=170mm]{sim_generic_maps.pdf}
-\caption{An example of one simulation iteration, whereby (a) a habitat covariate is simulated across a hypothetical landscape and allowed to evolve over time (top panels), (b) animal abundance is simulated conditional on the simulated habitat covariate and an assumed formulation for spatio-temporal dynamics, (c) transect surveys are simulated over the landscape (here, transects were assumed to cover $5\%$ of each grid cell transversed), and (d) animal abundance is estimated via a spatio-temporal statistical model.  Each column depicts results for a given time step (each simulation used 20 time steps).  In this particular simulation, abundance was simulated according to the closed population resource selection (CPRS) specification, while estimation was conducted assuming a closed population ideal free (CPIF) model.}
+\caption{An example of one simulation iteration, whereby (a) a habitat covariate is simulated across a hypothetical landscape and allowed to evolve over time (top panels), (b) animal abundance is simulated conditional on the simulated habitat covariate and an assumed formulation for spatio-temporal dynamics, (c) transect surveys are simulated over the landscape (here, transects were assumed to cover $5\%$ of each grid cell transversed), and (d) animal abundance is estimated via a spatio-temporal statistical model.  Each column depicts results for a given time step (each simulation used 20 time steps).  In this particular simulation, abundance was simulated according to the closed population resource selection (CPRS) specification, while estimation was conducted assuming a space-time process convolution (STPC) model.}
 \label{fig:sim_maps}
 \end{center}
 \end{figure*}
@@ -375,9 +377,18 @@ One could consider alternative formulations for $\boldsymbol{\varphi}$ that allo
 \begin{figure*}
 \begin{center}
 \includegraphics[width=170mm]{bias_generic.pdf}
-\caption{Boxplots depicting proportion relative bias of animal abundance for different combinations of data generating model (CPRD, CPUD, or OPRD), sampling effort (1 or 5 transects/time step), and estimation model for ``generic" simulations.  Proportion bias is computed by averaging bias of the posterior mean over all time steps for a particular simulation, with each simulation contributing one data point to each boxplot.  The lower and upper limits of each box correspond to first and third quartiles, while whiskers extend to the lowest and highest observed bias within 1.5 interquartile range units from the box.  Outliers outside of this range are denoted with points.  To make plots more legible, outliers with a proportional bias of greater than 2.0 were truncated at 2.0 for ``1 transect" simulations and at 0.25 for ``5 transect" simulations (denoted with open triangles). Horizontal lines within boxes denote median bias.  Note that the number of simulations for each boxplot varies by estimation model and number of transects (see XXX).
+\caption{Boxplots depicting proportion relative bias of animal abundance for different combinations of data generating model (CPRD, CPUD, or OPRD), sampling effort (1 or 5 transects/time step), and estimation model for ``generic" simulations.  The lower and upper limits of each box correspond to first and third quartiles, while whiskers extend to the lowest and highest observed bias within 1.5 interquartile range units from the box.  Outliers outside of this range are denoted with points.  Horizontal lines within boxes denote median bias.  Note that the number of simulations for each boxplot varies by estimation model and number of transects (see Table S2.1).
 }
 \label{fig:sim_maps}
+\end{center}
+\end{figure*}
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=170mm]{BOSS_survey_map.pdf}
+\caption{A map depicting on-effort aerial survey tracks (blue lines) overlaid on top of the 2012 survey area for ice associated seals in the Bering Sea.  The black squares are approximately $625km^2$ and were used to define individual survey units in spatio-temporal analyses.  Alaska borders the study area to the west, while Russia appears to the east.  Also shown is a 1000m depth contour (brown line), and the U.S./Russia Exclusive Economic Zone (EEZ) boundary (orange line) which was used to construct the easterly edge of the survey area.  We relied on data from maximal ice extent in April of 2012 to define the southern boundary of the survey area.  Red points indicate the position of knots used to construct spatio- or spatio-temporal random effects during estimation.
+}
+\label{fig:BOSS_effort}
 \end{center}
 \end{figure*}
 

@@ -99,6 +99,7 @@ mcmc_AST<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
   Beta[1]=mean(Mu) #set intercept to reasonable starting value
   Beta.mc=matrix(0,n.beta,mcmc.length)
   tau.epsilon=runif(1,10,100)
+  if(Control$fix.tau.epsilon==TRUE)tau.epsilon=100
   tau.eta=runif(1,10,100)
   tau.gamma=runif(1,10,100)
   Tau.epsilon.mc=rep(0,mcmc.length)
@@ -152,6 +153,7 @@ mcmc_AST<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
       Diff=Mu[Which.obs]-Mu.pred
       tau.epsilon <- rgamma(1,0.5*n.obs + Prior.pars$a.eps, as.numeric(crossprod(Diff,Diff))*0.5 + Prior.pars$b.eps)
     }
+    #if(tau.epsilon<1)tau.epsilon=1
     
     #update beta
     Beta=t(rmvnorm(1,XpXinvXp%*%(Mu[Which.obs]-Eta[Data$Count.data[,"Cell"]]-Gamma[Data$Count.data[,"Time"]]),XpXinv/(tau.epsilon+Prior.pars$beta.tau)))
@@ -164,6 +166,7 @@ mcmc_AST<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
     Eta=Data$K%*%Alpha
     #update tau.eta
     tau.eta <- rgamma(1, n.knots*0.5 + Prior.pars$a.eta, as.numeric(crossprod(Alpha,Alpha)*0.5) + Prior.pars$b.eta)    
+    #if(tau.eta<1)tau.eta=1
     
     #update REs, precision for time series RW2 ICAR model
     Dat.minus.Exp=Mu[Which.obs]-X.obs%*%Beta-Eta[Data$Count.data[,"Cell"]]
@@ -175,7 +178,8 @@ mcmc_AST<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
     #Gamma=Gamma-mean(Gamma)  #just center first moment so no confounding with fixed effect intercept  
     #update tau.gamma
     tau.gamma <- rgamma(1,t.steps*0.5 + Prior.pars$a.gamma, as.numeric(crossprod(Gamma,QT %*% Gamma)*0.5) + Prior.pars$b.gamma)
-   
+    #if(tau.gamma<1)tau.gamma=1
+    
     #adapt proposal distributions if Control$adapt=TRUE
     if(Control$adapt==TRUE & iiter%%100==0){
       Diff=Accept-Accept.old

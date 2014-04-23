@@ -9,7 +9,7 @@
 \usepackage{setspace}
 \usepackage{ulem}
 \usepackage{xcolor}
-\usepackage[labelfont=bf,labelsep=period]{caption} %for making figure and table numbers bold
+\usepackage[labelfont=bf,labelsep=period,font=singlespacing]{caption} %for making figure and table numbers bold
 \usepackage[colorlinks,bookmarksopen,bookmarksnumbered,citecolor=red,urlcolor=red]{hyperref}
 \hypersetup{pdfpagemode=UseNone}
 
@@ -74,9 +74,9 @@ Appendix S2: Details of simulation studies investigating performance of spatio-t
 \doublespacing
 We conducted two simulation studies to evaluate the performance of different spatio-temporal statistical models for estimating animal abundance.  In the first, we simulated ``generic" populations, where surveys were assumed to occur over a simple $20 \times 20$ grid.  The advantage of this approach was that estimator performance could be evaluated using a relatively small number of grid cells which resulted in relatively fast execution times.  It also allowed us to investigate performance relative to different data generating models, levels of sampling effort, and degree of change in a hypothetical habitat covariate, thus allowing us to evaluate the robustness of different spatio-temporal statistical models over a variety of sampling situations.
 
-\hspace{.5in} The second simulation study used habitat covariates, effort, and estimated abundance from a recent survey of ice-associated seals \citep[see e.g.][]{ConnEtAl2014} to investigate estimator performance under a more realistic sampling scenario.  The purpose of this study was to determine whether different classes of spatio-temporal statistical models were likely to produce reliable estimates of apparent spotted seal abundance (apparent in the sense that estimates are presently unadjusted for incomplete detection).  We now describe configuration of each of the simulation studies in greater detail.
+\hspace{.5in} The second simulation study used habitat covariates, effort, and estimated abundance from a recent survey of ice-associated seals \citep[see e.g.][]{ConnEtAl2014} to investigate estimator performance under a more realistic sampling scenario.  The purpose of this study was to determine whether different classes of spatio-temporal statistical models were likely to produce reliable estimates of apparent spotted seal abundance in 2012 (apparent in the sense that estimates are presently unadjusted for incomplete detection).  We now describe configuration of each of the simulation studies in greater detail.
 
-\section{Simulation study 1: generic populations}
+\section{Simulation study: generic populations}
 
 We configured generic simulations such that spatial and temporal variability in animal abundance was dependent (in part) on a hypothetical covariate.  Each simulation involved several steps, as follows.
 
@@ -84,12 +84,7 @@ We configured generic simulations such that spatial and temporal variability in 
 
 To start with, we generated a habitat covariate on a $30 \times 30$ grid by convolving a bivariate Gaussian kernel with independent AR1 time series processes occurring at each of $m=36$ knots located on an even grid around the landscape (Fig. \ref{fig:sim-hab}).  This process is structurally similar to the type of spatio-temporal ``dynamical process convolution model" described by \citet{CalderEtAl2002}.
 
-\begin{figure*}
-\begin{center}
-\includegraphics[width=170mm]{sim_knots.pdf}
-\caption{Spatial grid and knot positions (blue points) for simulating spatio-temporal variation in a hypothetical habitat covariate.} \label{fig:sim-hab}
-\end{center}
-\end{figure*}
+
 
 \hspace{.5in} In particular, covariate values for time $t$ are calculated as
 \begin{eqnarray*}
@@ -133,12 +128,7 @@ Here, we include spatio-temporal random effects through process convolution usin
 
 At each time step of simulation, transects were simulated as straight, vertical lines across the entire study area, beginning at randomly selected grid cells along the southern terminus (see e.g. Fig. 1 of main article).  Each transect thus covered 20 grid cells; we configured simulations such that transects covered 5\% of each grid cell they passed through.  In the event of $>1$ transect per time step, starting grid cells on the southern terminus were sampled via a uniform distribution without replacement.  Transect placement was re-randomized at each time step.  Although strategic options for spatially balanced sampling would have been possible here, our experience with conducting aerial transect surveys in dynamic environments is that logistical factors such as weather often prevent one from adhering to `optimal' sampling designs.  Random transect placement was an attempt to mimic such a situation.
 
-\begin{figure*}
-\begin{center}
-\includegraphics[width=170mm]{Covariate_abundance_relation.pdf}
-\caption{Relationship between expected initial abundance ($\boldsymbol{\lambda}$) and a simulated covariate for ``generic" spatio-temporal abundance simulations.  The absolute relationship applies to initial abundance (i.e. at the first time step) for both restricted dispersal data generating models (OPRD and CPRD); the same relative relationship (ignoring the intercept) is applied to the evolution of abundance via habitat selection for OPRD and CPRD, and to multinomial cell probabilities for the unlimited dispersal data generating model (CPUD).} \label{fig:cov-relation}
-\end{center}
-\end{figure*}
+
 
 Following selection of the grid cells and times where sampling occurred, we drew animal counts from a Poisson distribution at times and locations where sampling was conducted:
 \begin{eqnarray*}
@@ -160,15 +150,71 @@ We conducted a small simulation study where simulation replicates varied by (1) 
 where $\hat{\rho}_k$ indicates lag $k$ autocorrelation, $\hat{\sigma}_N^2$ gives posterior variance for
 estimated abundance, and $\hat{N}$ gives the posterior mean for abundance.  We then adjusted this estimate upwards depending on appearance of MCMC trace plots to arrive at MCMC run times (Table \ref{tab:run_times}). Including a ``burn-in" phase and a 5,000 iteration tuning phase for each analysis, we then estimated requisite run times for each analysis type for the two levels of sample coverage (1 or 5 transects; Table \ref{tab:run_times}).
 
+
+
+\hspace{.5in} Examination of Table \ref{tab:run_times} indicated extremely slow run times for the OPRS model, and that the AST model was appreciably faster than the CPIF or STPC models.  Longer run times were needed when there were fewer data (i.e. when there was only one transect for time step).  We thus limited the number of simulation replicates analyzed for certain combinations of estimation model and sample coverage (Table \ref{tab:run_times}).  For instances where only 10 simulations were analyzed, we chose data sets to cover a range of $\delta$ values (by selecting simulations $5, 15, 25, \hdots, 95$); for those employing 19 simulations, simulations $5, 10, 15, \hdots, 95$ were selected.
+
+\hspace{.5in} For each design point, we calculated proportional relative bias (PRB), mean squared error (MSE), coefficient of variation (CV), and 90\% posterior credible interval coverage (Cov90).  Proportional bias and mean squared error were calculated differently depending upon the data generating model (open or closed) and estimation model (open or closed).  When the generating model was closed but the estimation model was open (i.e., different estimates of abundance were available for each time step), we calculated a single best ``average abundance estimator," $\bar{N}$, to calculate $PRB$ and $MSE$.  In particular, we used numerical optimization \citep[via the `BFGS' minimizer in function \texttt{optim} in the R programming environment][]{RTeam2012} to solve for the $\bar{N}$ that minimizes
+\begin{eqnarray*}
+  E \left[ \sum_t (\hat{N}_t^{(m)} - \bar{N})^2 | \text{Data} \right],
+\end{eqnarray*}
+where $\hat{N}_t^{(m)}$ is a posterior realization of abundance at time $t$ (e.g. at the $m$th iteration of the Markov chain).  This approach seeks to minimize Bayes risk for mean squared error loss. To calculate PRB and MSE when an open population model was used to simulate abundance, we simply took the grand mean of PRB and MSE over simulation run and time step.  We summarized CV by (a) taking the median CV (posterior SE / posterior mean) with respect to time step for each individual simulation, and (b) averaging median CV across simulation runs.  For Cov90, we again took the grand mean of 90\% credible interval coverage across both time and simulation run.
+
+\hspace{.5in} In addition to typical summary statistics, we also analyzed whether proportional bias was a function of the strength of habitat changes.  In particular, we used simple linear regression to analyze whether bias was a function of $\delta$, the expected proportional change in simulated habitat covariate values (recall this value ranged from -0.02 to 0.02 depending on simulation run).
+
+\subsection{Results}
+
+% latex table generated in R 3.0.3 by xtable 1.7-1 package
+% Mon Apr 14 12:25:06 2014
+
+Estimator performance summaries are provided in Table \ref{tab:generic_results}.  Discussion of these results is provided in the main article text.  The only design point where there was evidence for a non-zero regression coefficient relating proportional bias to $\delta$ was for the STPC estimation model, OPRD data generating model, and one transect per time period. In this case, there was a significantly negative slope coefficient ($p<0.001$), indicating that when the habitat covariate is decreasing, one tends to overestimate abundance, and when the habitat covariate is decreasing one tends to overestimate abundance.  All twenty other design points had $p>0.05$.
+
+
+
+
+\section{Simulation study: spotted seals in the eastern Bering Sea}
+
+Initial analyses of seal abundance in the Bering Sea \citep[e.g.][]{ConnEtAl2014,VerHoefEtAl2014} indicated several important predictors of abundance, including linear and quadratic effects of sea ice concentration ({\it ice}), distance from 1000m depth countour ({\it contour}), and distance from the southern ice edge ({\it edge}).  Spotted seals exhibited the highest concentrations of abundance near the southern ice edge, and were rare in the northern reaches of the surveyed area.  We thus developed formulations for spotted seal abundance that mirrored these findings (Fig. \ref{fig:sim_est_Bering}).  We initially considered using all three data generating models to simulate spotted seal abundance; however those employing resource selection (CPRD,OPRD) led to unrealistic distributions.  In particular, the rapid dissipation of ice in Bristol Bay often led to large, unrealistic abundance levels in individual sample units.  As such, we only used the CPUD data generating model (as defined in preceding sections) to simulate spotted seal abundance.  We modeled fixed effects for abundance at time $t$ using the following general structure:
+\begin{eqnarray}
+  \label{eq:seal_formula}
+  \boldsymbol{\theta}_t = 20 {\it ice} - 13 {\it ice}^2 - 0.7 {\it edge} - 0.7 {\it edge}^{0.5} - 2.5 {\it contour}.
+\end{eqnarray}
+Note that $\boldsymbol{\theta}_t$ is in log space, that the ${\it edge}$ and ${\it contour}$ covariates were standardized to have a mean of 1.0 over the study area.  We set expected abundance for the CPUD model to 280,000.  This value is approximately half of estimated abundance from a previous analysis of seal data \citep{ConnEtAl2014} to reflect incomplete detection of seals on sea ice.
+
+
+
+
+\hspace{.5in} In addition to fixed effects for abundance, we again included spatio-temporal random effects in the CPUD model.  These were induced in the same manner as for the ``generic" simulations, albeit with a different set of knots (Fig. \ref{fig:Bering_knots}).  Sample units (grid cells in Fig. \ref{fig:Bering_knots}) were defined at the resolution of sea ice imagery, which was obtained from the National Snow and Ice Data Center, Boulder, CO on an EASE Grid 2.0 projection.  Each sample unit is approximately 625km$^2$.  We simulated a total of 100 data sets.
+
+
+\hspace{.5in} For each simulation, we used the same procedure as for the ``generic" simulations to simulate transect counts, conditioning on the day, time, and effective area sampled by each transect.  Transect counts were then analyzed by the three estimation models (AST, CPIF, STPC); each was provided with the same set of covariates and ``correct" fixed effects model structure.  We then used pilot runs to determine adequate MCMC run time lengths, requisite computing time, and to determine a reasonable number of simulations to analyze for each estimation model (Table \ref{tab:run_times_Bering}).
+
+
+\hspace{.5in} For each simulation, we used the same set of prior distributions specified in Appendix S1 and computed the same set of performance measures as for the ``generic" simulation study.  However, in this case we also computed these measures on a day-by-day basis.  In particular, we were interested in whether estimates made for April 27 (the only day a flight was made into the epicenter of simulated seal abundance along the southwestern ice edge) were more accurate than ``average" estimates for the entire time series.  
+
+
+\subsection{Results}
+
+Simulation performance results for ``Bering Sea" simulations are presented in Table
+\ref{tab:sim_Bering_results}.
+
+
+\renewcommand{\refname}{Literature Cited}
+\bibliographystyle{JEcol}
+
+\bibliography{master_bib}
+
+\pagebreak
+
 \begin{table}
-\caption{\setstretch{2} Execution details for MCMC analysis of spatio-temporal abundance data as a function of estimation model and number of transects.  Estimation model and transects/time step are indicated in columns (e.g., AST-5 indicates the AST model applied to data from 5 transects/time step).  Presented are the minimum number of MCMC iterations needed to achieve a Monte Carlo CV of 0.01 (`Min iterations'), the number of MCMC iterations used to summarize the posterior distribution (`MCMC length'), the number of additional iterations at the beginning of the MCMC chain that are discarded as a burn-in (`Burn-in'), the number of additional iterations conducted per simulation in order to tune Metropolis-Hastings proposal distributions prior to start of the main MCMC run (`Adapt length'), the estimated number of hours per simulation (`Hrs/sim'), and the actual number of simulations that were analyzed for each estimation model (`\# Sims').}
+\caption{Execution details for MCMC analysis of spatio-temporal abundance data as a function of estimation model and number of transects for ``generic" simulations.  Estimation model and transects/time step are indicated in columns (e.g., AST-5 indicates the AST model applied to data from 5 transects/time step).  Presented are the minimum number of MCMC iterations needed to achieve a Monte Carlo CV of 0.01 (`Min iterations'), the number of MCMC iterations used to summarize the posterior distribution (`MCMC length'), the number of additional iterations at the beginning of the MCMC chain that are discarded as a burn-in (`Burn-in'), the number of additional iterations conducted per simulation in order to tune Metropolis-Hastings proposal distributions prior to start of the main MCMC run (`Adapt length'), the estimated number of hours per simulation (`Hrs/sim'), and the actual number of simulations that were analyzed for each estimation model (`\# Sims').}
 \label{tab:run_times}
 \begin{tabular}{rrrrrrrrr}
 \\
  & \multicolumn{8}{c}{Estimation model} \\
  & AST-1 & AST-5 & CPIF-1 & CPIF-5 & OPRS-1 & OPRS-5 & STPC-1 & STPC-5 \\
 \hline \hline
-Min iterations:  & 13,000 & 1,014 & 81 & 6 & 45,081 & 6,218 & 256 & 52 \\
+Min iterations:  & 13,000 & 1,014 & 810 & 60 & 45,081 & 6,218 & 2560 & 520 \\
 MCMC length: & 20,000  & 10,000 & 10,000 & 10,000 & 50,000 & 10,000 & 10,000 & 10,000 \\
 Burn-in: & 10,000 & 10,000 & 5,000 & 5,000 & 10,000 & 10,000 & 5,000 & 5,000 \\
 Adapt length: & 5,000 & 5,000 & 5,000 & 5,000 & 5,000 & 5,000 & 5,000 & 5,000 \\
@@ -178,42 +224,115 @@ Hrs/sim:   & 0.23 & 0.17 & 1.5 & 1.5 & 71.5 & 27.5 & 1.5 & 1.5 \\
 \end{tabular}
 \end{table}
 
-\hspace{.5in} Examination of Table \ref{tab:run_times} indicated extremely slow run times for the OPRS model, and that the AST model was appreciably faster than the CPIF or STPC models.  Longer run times were needed when there were fewer data (i.e. when there was only one transect for time step).  We thus limited the number of simulation replicates analyzed for certain combinations of estimation model and sample coverage (Table \ref{tab:run_times}).  For instances where only 10 simulations were analyzed, we chose data sets to cover a range of $\delta$ values (by selecting simulations $5, 15, 25, \hdots, 95$); for those employing 19 simulations, simulations $5, 10, 15, \hdots, 95$ were selected.
+\pagebreak
+
+\begin{table}[ht]
+\caption{Performance of posterior summaries of abundance for MCMC analysis of spatio-temporal abundance data for ``generic" simulations.  In particular, we report proportion relative bias (PRB), 90\% credible interval coverage (Cov90), coefficient of variation (CV), and relative mean square error (rMSE) as a function of estimation model (Est.mod), number of transects per time step, and generating model (Gen.mod).  Details on performance metric calculations are provided in the text.}
+\label{tab:generic_results}
+\centering
+\begin{tabular}{lllrrrr}
+  \hline
+Est.mod & Transects & Gen.mod & PRB & Cov90 & CV & rMSE \\
+  \hline
+AST & 1 Transect & CPRD & 0.02 & 0.73 & 0.07 & 16.4 \\
+  AST & 1 Transect & CPUD & 0.00 & 0.80 & 0.06 & 2.8 \\
+  AST & 1 Transect & OPRD & 0.01 & 0.78 & 0.07 & 43.6 \\
+  AST & 5 Transects & CPRD & -0.00 & 0.76 & 0.04 & 0.9 \\
+  AST & 5 Transects & CPUD & 0.00 & 0.86 & 0.04 & 0.4 \\
+  AST & 5 Transects & OPRD & 0.00 & 0.80 & 0.03 & 6.8 \\
+  CPIF & 1 Transect & CPRD & 0.01 & 0.61 & 0.03 & 12.7 \\
+  CPIF & 1 Transect & CPUD & 0.01 & 0.84 & 0.03 & 6.5 \\
+  CPIF & 1 Transect & OPRD & -0.00 & 0.48 & 0.03 & 22.2 \\
+  CPIF & 5 Transects & CPRD & 0.00 & 0.72 & 0.01 & 0.6 \\
+  CPIF & 5 Transects & CPUD & 0.00 & 0.89 & 0.01 & 0.4 \\
+  CPIF & 5 Transects & OPRD & 0.01 & 0.18 & 0.01 & 14.3 \\
+  OPRS & 5 Transects & CPRD & 0.02 & 0.88 & 0.05 & 1.4 \\
+  OPRS & 5 Transects & CPUD & 0.03 & 0.85 & 0.05 & 5.7 \\
+  OPRS & 5 Transects & OPRD & 0.02 & 0.92 & 0.05 & 7.5 \\
+  STPC & 1 Transect & CPRD & 0.02 & 0.64 & 0.05 & 8.1 \\
+  STPC & 1 Transect & CPUD & 0.02 & 0.57 & 0.06 & 9.9 \\
+  STPC & 1 Transect & OPRD & 0.01 & 0.70 & 0.05 & 21.0 \\
+  STPC & 5 Transects & CPRD & 0.00 & 0.57 & 0.02 & 0.4 \\
+  STPC & 5 Transects & CPUD & 0.00 & 0.34 & 0.02 & 0.4 \\
+  STPC & 5 Transects & OPRD & -0.00 & 0.54 & 0.02 & 6.6 \\
+   \hline
+\end{tabular}
+\end{table}
+
+\pagebreak
+
+\begin{table}
+\caption{Execution details for MCMC analysis of spatio-temporal abundance data for spotted seal simulations.  For each estimation model, we present the minimum number of MCMC iterations needed to achieve a Monte Carlo CV of 0.01 (`Min iterations'), the number of MCMC iterations ultimately used to summarize the posterior distribution (`MCMC length'), the number of additional iterations at the beginning of the MCMC chain that are discarded as a burn-in (`Burn-in'), the number of additional iterations conducted per simulation in order to tune Metropolis-Hastings proposal distributions prior to start of the main MCMC run (`Adapt length'), the estimated number of hours per simulation (`Hrs/sim'), and the actual number of simulations that were analyzed for each estimation model (`\# Sims'). }
+\label{tab:run_times_Bering}
+\begin{tabular}{rrrr}
+\\
+ & \multicolumn{3}{c}{Estimation model} \\
+ & AST & CPIF & STPC \\
+\hline \hline
+Min iterations:  & 9,281 & 7,400 & 130,548 \\
+MCMC length: & 30,000  & 60,000 & 160,000 \\
+Burn-in: & 10,000 & 10,000 & 10,000 \\
+Adapt length: & 5,000 & 5,000 & 5,000 \\
+Hrs/sim:   & 0.3 & 9.3 & 22.0 \\
+\# Sims:  & 100 & 10 & 10  \\
+\hline
+\end{tabular}
+\end{table}
+
+\pagebreak
+
+% latex table generated in R 3.0.3 by xtable 1.7-1 package
+% Mon Apr 21 17:44:21 2014
+\begin{table}[ht]
+\caption{Performance of posterior summaries of abundance for MCMC analysis of spatio-temporal abundance data for simulations constructed to resemble seal sampling in the Bering Sea.  In particular, we report proportion relative bias (PRB), 90\% credible interval coverage (Cov90), coefficient of variation (CV), and relative mean square error (rMSE) as a function of estimation model (`Est.mod'). Separate performance summaries are presented for the average abundance estimator (i.e. Est.type = $\bar{N}$) and for posterior estimates of abundance on April 27, 2012 (the day a flight transited over the epicenter of spotted seal abundance).  Details on performance metric calculations are provided in the text.}
+\label{tab:sim_Bering_results}
+\begin{tabular}{llllll}
+  \hline
+Est.type & Est.mod & rMSE & PRB & Cov90 & CV  \\
+  \hline
+  27 Apr & AST & 0.56 & 0.03 & 1.00 & 0.18 \\
+  27 Apr & CPIF & 0.43 & 0.06 & 0.80 & 0.06 \\
+  27 Apr & STPC & 0.79 & 0.03 & 1.00 & 0.11 \\
+  $\bar{N}$ & AST & 7.45 & 0.26 & 0.77 & 0.26  \\
+  $\bar{N}$  & CPIF & 0.44 & 0.06 & 0.80 & 0.06 \\
+  $\bar{N}$  & STPC & 0.60 & 0.04 & 0.86 & 0.23 \\
+   \hline
+\end{tabular}
+\end{table}
+
+\clearpage
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=100mm]{sim_knots.pdf}
+\caption{Spatial grid and knot positions (blue points) for simulating spatio-temporal variation in a hypothetical habitat covariate.} \label{fig:sim-hab}
+\end{center}
+\end{figure*}
+
+\pagebreak
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=100mm]{Covariate_abundance_relation.pdf}
+\caption{Relationship between expected initial abundance ($\boldsymbol{\lambda}$) and a simulated covariate for ``generic" spatio-temporal abundance simulations.  The absolute relationship applies to initial abundance (i.e. at the first time step) for both restricted dispersal data generating models (OPRD and CPRD); the same relative relationship (ignoring the intercept) is applied to the evolution of abundance via habitat selection for OPRD and CPRD, and to multinomial cell probabilities for the unlimited dispersal data generating model (CPUD).} \label{fig:cov-relation}
+\end{center}
+\end{figure*}
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=170mm]{sim_Bering_maps.pdf}
+\caption{An example of a single spotted seal simulation, whereby 2012 habitat covariates (e.g. daily sea ice concentration, displayed in the first row of panels) are used to simulate animal abundance (second row of panels). Counts are then generated using effort information from 2012 transect surveys (third row of panels), and animal abundance is estimated via a spatio-temporal statistical model (fourth row of panels).  Each column depicts results for a given time step.  Day one of simulation corresponded to April 10, 2012, and the final day of simulation (day 29) corresponded to May 8, 2012.  In this particular simulation, abundance was simulated according to the closed population unlimited dispersal (CPUD) specification, while estimation was conducted assuming the closed population, ideal free (CPIF) model (which included spatio-temporal random effects).}
+\label{fig:sim_est_Bering}
+\end{center}
+\end{figure*}
 
 
-\subsection{Results}
-
-
-
-
-
-
-the central while   Appendix S1.  In this version, we
-
-, ideal free (CPIF) model, constructed as described in Appendix S1, (2) an open population resource selection (OPRS) model, constructed in the same manner as in Appendix S1, and (3) a closed population resource selection (CPRS)
-
-
-
-\hspace{.5in} Although surveys and estimation occurred on a $20 \times 20$ grid, one of our data generating models assuming an open population required a larger grid size (see below).
-
-
-
-\section{Simulation study 2: spotted seals in the eastern Bering Sea}
-
-
-\begin{linenomath*}
-\begin{eqnarray}
-  poop \nonumber
-\end{eqnarray}
-\end{linenomath*}
-
-
-
-
-\renewcommand{\refname}{Literature Cited}
-\bibliographystyle{JEcol}
-
-\bibliography{master_bib}
+\begin{figure*}
+\begin{center}
+\includegraphics[width=170mm]{BOSS_grid_wKnots.pdf}
+\caption{Sample units (grid cells) and knots (red dots) used in spatio-temporal analysis of spotted seal transect counts.} \label{fig:Bering_knots}
+\end{center}
+\end{figure*}
 
 \end{flushleft}
 \end{document}

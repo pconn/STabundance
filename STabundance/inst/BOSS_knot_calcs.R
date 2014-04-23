@@ -2,9 +2,10 @@
 
 library(sp)
 library(rgeos)
+library(Matrix)
 
 #load BOSS grid 
-load('BOSS_data_31Jan14.Rdata') #read in "Data" holding grid info
+load('AlaskaBeringData2012_17April2014.Rdat') #read in "Data" holding grid info
 
 Coords=coordinates(Data$Grid[[1]])
 x.min=min(Coords[,1])-100000

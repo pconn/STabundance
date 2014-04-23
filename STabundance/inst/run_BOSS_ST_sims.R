@@ -59,25 +59,25 @@ for(igen in 1:2){  #loop over generating model to generate data sets
      
     n.knots=length(Data$Knot.locations)
     #calculate kernel densities at grid cell centroids 
-    Cell.centroids=gCentroid(Data$Grid[[1]],byid=TRUE)
+    #Cell.centroids=gCentroid(Data$Grid[[1]],byid=TRUE)
     #Distances=gDistance(Data$Knot.locations,Cell.centroids,byid=TRUE)
      
     Data$K=K.data$K
     for(iest in 1:3){ #loop over estimation model
       
       run.flag=0
-      if(Est.mods[iest]=="CPIF"){
-          Control=list(iter=8000,burnin=10,thin=10,predict=TRUE,MH.N=0.06,MH.omega=rep(0.07,t.steps),adapt=TRUE,fix.tau.epsilon=FALSE)                
-          #Control=list(iter=5000,burnin=4000,thin=1000,predict=FALSE,MH.N=0.06,MH.omega=rep(0.07,t.steps),adapt=TRUE,fix.tau.epsilon=FALSE)        
+      if(Est.mods[iest]=="CPIF" & (isim%%10)==1){
+          #Control=list(iter=8000,burnin=10,thin=10,predict=TRUE,MH.N=0.06,MH.omega=rep(0.07,t.steps),adapt=TRUE,fix.tau.epsilon=FALSE)                
+          Control=list(iter=5000,burnin=4000,thin=1000,predict=FALSE,MH.N=0.06,MH.omega=rep(0.07,t.steps),adapt=TRUE,fix.tau.epsilon=FALSE)        
           MCMC=mcmc_CPIF(model=~0+ice_conc+ice2+dist_edge+sqrt_edge+dist_shelf,Prior.pars=NULL,Data=Data,Control=Control,Area.adjust=Effort$Area.hab)            
-          Control=list(iter=10100,burnin=100,thin=5,predict=TRUE,MH.N=MCMC$Control$MH.N,MH.omega=MCMC$Control$MH.omega,adapt=FALSE,fix.tau.epsilon=FALSE)        
+          Control=list(iter=60000,burnin=10000,thin=25,predict=TRUE,MH.N=MCMC$Control$MH.N,MH.omega=MCMC$Control$MH.omega,adapt=FALSE,fix.tau.epsilon=FALSE)        
           MCMC=mcmc_CPIF(model=~0+ice_conc+ice2+dist_edge+sqrt_edge+dist_shelf,Prior.pars=NULL,Data=Data,Control=Control,Area.adjust=Effort$Area.hab) 
           run.flag=1
       } 
       
       if(Est.mods[iest]=="AST"){
-          Control=list(iter=20000,burnin=10,thin=10,predict=TRUE,MH.mu=rep(1.5,nrow(Data$Count.data)),MH.N=0.05,MH.omega=rep(0.05,t.steps),adapt=TRUE,fix.tau.epsilon=FALSE)        
-          #Control=list(iter=5000,burnin=100,thin=1000,predict=FALSE,MH.mu=rep(0.2,nrow(Data$Count.data)),MH.N=0.05,MH.omega=rep(0.05,t.steps),adapt=TRUE,fix.tau.epsilon=FALSE)        
+          #Control=list(iter=20000,burnin=10,thin=10,predict=TRUE,MH.mu=rep(1.5,nrow(Data$Count.data)),MH.N=0.05,MH.omega=rep(0.05,t.steps),adapt=TRUE,fix.tau.epsilon=FALSE)        
+          Control=list(iter=5000,burnin=4000,thin=1000,predict=FALSE,MH.mu=rep(0.2,nrow(Data$Count.data)),MH.N=0.05,MH.omega=rep(0.05,t.steps),adapt=TRUE,fix.tau.epsilon=FALSE)        
           MCMC=mcmc_AST(model=~ice_conc+ice2+dist_edge+sqrt_edge+dist_shelf,Prior.pars=NULL,Data=Data,Control=Control,Area.adjust=Effort$Area.hab) 
           Control=list(iter=30000,burnin=10000,thin=10,predict=TRUE,MH.mu=MCMC$Control$MH.mu,MH.N=0.05,MH.omega=rep(0.05,t.steps),adapt=FALSE,fix.tau.epsilon=FALSE)        
           MCMC=mcmc_AST(model=~ice_conc+ice2+dist_edge+sqrt_edge+dist_shelf,Prior.pars=NULL,Data=Data,Control=Control,Area.adjust=Effort$Area.hab) 
@@ -85,11 +85,11 @@ for(igen in 1:2){  #loop over generating model to generate data sets
       }        
       
       
-      if(Est.mods[iest]=="STPC"){
-          Control=list(iter=14000,burnin=10,thin=10,predict=TRUE,MH.mu=rep(1.5,nrow(Data$Count.data)),MH.N=0.05,MH.omega=rep(0.05,t.steps),adapt=TRUE,fix.tau.epsilon=FALSE)        
-          #Control=list(iter=5000,burnin=100,thin=1000,srr.tol=0.5,predict=FALSE,MH.mu=rep(0.2,nrow(Data$Count.data)),MH.N=0.05,MH.omega=rep(0.05,t.steps),adapt=TRUE,fix.tau.epsilon=FALSE)        
+      if(Est.mods[iest]=="STPC" & (isim%%10)==1){
+          #Control=list(iter=10000,burnin=10,thin=10,predict=TRUE,MH.mu=rep(1.5,nrow(Data$Count.data)),MH.N=0.05,MH.omega=rep(0.05,t.steps),adapt=TRUE,fix.tau.epsilon=FALSE)        
+          Control=list(iter=5000,burnin=4000,thin=1000,srr.tol=0.5,predict=FALSE,MH.mu=rep(0.2,nrow(Data$Count.data)),MH.N=0.05,MH.omega=rep(0.05,t.steps),adapt=TRUE,fix.tau.epsilon=FALSE)        
           MCMC=mcmc_STPC(model=~ice_conc+ice2+dist_edge+sqrt_edge+dist_shelf,Prior.pars=NULL,Data=Data,Control=Control,Area.adjust=Effort$Area.hab) 
-          Control=list(iter=10100,burnin=100,thin=5,predict=TRUE,MH.mu=MCMC$Control$MH.mu,MH.N=0.05,MH.omega=rep(0.05,t.steps),adapt=FALSE,fix.tau.epsilon=FALSE)        
+          Control=list(iter=160000,burnin=10000,thin=75,predict=TRUE,MH.mu=MCMC$Control$MH.mu,MH.N=0.05,MH.omega=rep(0.05,t.steps),adapt=FALSE,fix.tau.epsilon=FALSE)        
           MCMC=mcmc_STPC(model=~ice_conc+ice2+dist_edge+sqrt_edge+dist_shelf,Prior.pars=NULL,Data=Data,Control=Control,Area.adjust=Effort$Area.hab) 
           run.flag=1
       }
@@ -107,14 +107,14 @@ for(igen in 1:2){  #loop over generating model to generate data sets
       #for(i in 1:nrow(Obs.data))Cov[i]=Data$Grid[[Obs.data[i,"Time"]]]@data[Obs.data[i,"Cell"],"matern"]
       
       #calculate posterior for N
-      MCMC$MCMC$N=apply(MCMC$MCMC$Pred,c(2,3),'sum')
-      N.true=apply(Sim.data$N,2,'sum')
-      N.est=apply(MCMC$MCMC$N,1,'mean')
-      plot(N.est)
-      lines(N.true)
+      #MCMC$MCMC$N=apply(MCMC$MCMC$Pred,c(2,3),'sum')
+      #N.true=apply(Sim.data$N,2,'sum')
+      #N.est=apply(MCMC$MCMC$N,1,'mean')
+      #plot(N.est)
+      #lines(N.true)
       
-      crap=acf(MCMC$MCMC$N,lag.max=250)
-      (1+2*sum(crap$acf)*var(MCMC$MCMC$N)*10000)/(mean(MCMC$MCMC$N))^2
+      #crap=acf(MCMC$MCMC$N[1,200:999],lag.max=140)
+      #(1+2*sum(crap$acf)*var(MCMC$MCMC$N[1,200:999])*10000)/(mean(MCMC$MCMC$N[1,200:999]))^2
       
       #plot(apply(MCMC$MCMC$Pred,3,'sum')/30)
       

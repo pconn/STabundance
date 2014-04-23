@@ -35,9 +35,6 @@ sim_data_Bering<-function(sim.type){
   Area.adjust=1-Data$Grid[[1]]@data[,"land_cover"]
   
   S=nrow(Data$Grid[[1]])
-  
-  #initialize abundance for a single species over the "Grid"
-  set.seed(12345)
 
   for(it in 1:t.steps){
     Data$Grid[[it]]@data$sqrt_edge=sqrt(Data$Grid[[it]]@data[,"dist_edge"])

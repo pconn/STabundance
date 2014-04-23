@@ -1,24 +1,25 @@
 #plot simulated data maps
 library(ggplot2)
 library(grid)
-load('d:/ST_out/ST_out_gen1_est_STPC_trans_2_sim5.Rdata')
+load('d:/ST_out/ST_BOSS_out_gen1_est_CPIF_sim81.Rdata')
 
-load("./sim_generic_data/simdata_genRS2closed_trans5_sim5")
+load("./sim_BOSS_data/simBering_genRS2closed_sim81")
 Data=Sim.data$Data
 
 #construct data frame for ggplot2...  facet by variable type (covariate, abundance, counts, estimates)
 #and time step (4 choices)
-Cells=c(2,6,14,20)
+S=nrow(Data$Grid[[1]]@data)
+Cells=c(2,11,18,29)
 DF=data.frame(Type=c(rep("Covariate",S*4),rep("Abundance",S*4),rep("Count",S*4),rep("Estimate",S*4)),
               Time=rep(c(rep(Cells[1],S),rep(Cells[2],S),rep(Cells[3],S),rep(Cells[4],S)),4))
-DF$Cell=rep(1:400,16)
+DF$Cell=rep(1:S,16)
 
 #fill in covariate values
 DF$Response=rep(NA,S*16)
-DF$Response[1:S]=Data$Grid[[Cells[1]]]@data[,1]
-DF$Response[(S+1):(2*S)]=Data$Grid[[Cells[2]]]@data[,1]
-DF$Response[(2*S+1):(3*S)]=Data$Grid[[Cells[3]]]@data[,1]
-DF$Response[(3*S+1):(4*S)]=Data$Grid[[Cells[4]]]@data[,1]
+DF$Response[1:S]=Data$Grid[[Cells[1]]]@data[,"ice_conc"]
+DF$Response[(S+1):(2*S)]=Data$Grid[[Cells[2]]]@data[,"ice_conc"]
+DF$Response[(2*S+1):(3*S)]=Data$Grid[[Cells[3]]]@data[,"ice_conc"]
+DF$Response[(3*S+1):(4*S)]=Data$Grid[[Cells[4]]]@data[,"ice_conc"]
 # true abundance
 DF$Response[4*S+1:(4*S)]=as.vector(Sim.data$N[,c(Cells[1],Cells[2],Cells[3],Cells[4])])
 # Count - unobserved cells remain NAs
@@ -53,12 +54,12 @@ DF[which(DF[,"Time"]==Cells[3]),"Time"]=paste("t = ",Cells[3],sep='')
 DF[which(DF[,"Time"]==Cells[4]),"Time"]=paste("t = ",Cells[4],sep='')
 DF[,"Time"]=factor(DF[,"Time"],levels=c(paste("t = ",Cells[1],sep=''),paste("t = ",Cells[2],sep=''),paste("t = ",Cells[3],sep=''),paste("t = ",Cells[4],sep='')))
 library(gridExtra)
-p1 <- ggplot(subset(DF,Type=="Covariate"))+aes(Easting,Northing,fill=Response)+geom_raster()+facet_grid(Type~Time,scales='free')+tmp.theme+theme(axis.title.x=element_blank(),strip.background=element_rect(fill="white"),plot.margin=unit(c(1,0.75,-1.25,1),"line"))+scale_fill_gradientn(colours=myPalette(100))
-p2 <- ggplot(subset(DF,Type=="Abundance"))+aes(Easting,Northing,fill=Response)+geom_raster()+facet_grid(Type~Time,scales='free')+tmp.theme+theme(axis.title.x=element_blank(),strip.text.x=element_blank(),strip.background=element_rect(fill="white"),plot.margin=unit(c(.25,0.45,-.25,1),"line"))+scale_fill_gradientn(limits=c(0,440),colours=myPalette(100))
-p3 <- ggplot(subset(DF,Type=="Count"))+aes(Easting,Northing,fill=Response)+geom_raster()+facet_grid(Type~Time,scales='free')+tmp.theme+theme(axis.title.x=element_blank(),strip.text.x=element_blank(),strip.background=element_rect(fill="white"),plot.margin=unit(c(-.5,1,.5,1),"line"))+scale_fill_gradientn(colours=myPalette(100))
-p4 <- ggplot(subset(DF,Type=="Estimate"))+aes(Easting,Northing,fill=Response)+geom_raster()+facet_grid(Type~Time,scales='free')+tmp.theme+theme(strip.text.x=element_blank(),strip.background=element_rect(fill="white"),plot.margin=unit(c(-1.5,0.5,1,1),"line"))+scale_fill_gradientn(limits=c(0,440),colours=myPalette(100))
+p1 <- ggplot(subset(DF,Type=="Covariate"))+aes(Easting,Northing,fill=Response)+geom_raster()+facet_grid(Type~Time,scales='free')+tmp.theme+theme(legend.margin=unit(2.5,"mm"),axis.title.x=element_blank(),strip.background=element_rect(fill="white"),plot.margin=unit(c(1,0.75,-1.25,1),"line"))+scale_fill_gradientn(colours=myPalette(100))
+p2 <- ggplot(subset(DF,Type=="Abundance"))+aes(Easting,Northing,fill=Response)+geom_raster()+facet_grid(Type~Time,scales='free')+tmp.theme+theme(axis.title.x=element_blank(),strip.text.x=element_blank(),strip.background=element_rect(fill="white"),plot.margin=unit(c(.25,0.45,-.25,1),"line"))+scale_fill_gradientn(limits=c(0,5000),colours=myPalette(100))
+p3 <- ggplot(subset(DF,Type=="Count"))+aes(Easting,Northing,fill=Response)+geom_raster()+facet_grid(Type~Time,scales='free')+tmp.theme+theme(legend.margin=unit(5.5,"mm"),axis.title.x=element_blank(),strip.text.x=element_blank(),strip.background=element_rect(fill="white"),plot.margin=unit(c(-.5,1,.5,1),"line"))+scale_fill_gradientn(colours=myPalette(100))
+p4 <- ggplot(subset(DF,Type=="Estimate"))+aes(Easting,Northing,fill=Response)+geom_raster()+facet_grid(Type~Time,scales='free')+tmp.theme+theme(strip.text.x=element_blank(),strip.background=element_rect(fill="white"),plot.margin=unit(c(-1.5,0.5,1,1),"line"))+scale_fill_gradientn(limits=c(0,5000),colours=myPalette(100))
 
-pdf(file="sim_generic_maps.pdf")
+pdf(file="sim_Bering_maps.pdf")
 grid.arrange(arrangeGrob(p1,p2,p3,p4,nrow=4))
 dev.off()
 

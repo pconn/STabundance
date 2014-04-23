@@ -1,5 +1,5 @@
 ### format_effort.R
-### function to format effort data for spatio-temporal abundance analysis
+### function to format effort and hotspot/count data for spatio-temporal abundance analysis
 
 
 require(sp)
@@ -14,15 +14,25 @@ date.end=as.Date("2012-05-08")
 t.steps=as.numeric(date.end-date.start)
 
 #load spatio-temporal covariate & grid data
-load("BOSSst_2012data.Rdata")  #boss grid, ice data
 #read in Sp lines DF for transects ("on_effort_tracks.sldf") and Sp points Df for FMC points ("fmclogs.spdf")
-load('c:/users/paul.conn/git/STabundance/BOSS_2012Effort_28Mar14.Rdata')  
+load('c:/users/paul.conn/git/STabundance/BOSS_2012Effort_22Apr14.Rdata')  
+load("AlaskaBeringData2012_17April2014.Rdat")  #boss grid, ice data
+#rename IDs for grid cells to be 1:1299 instead of old IDs associated with 'full' Bering grid
+# (needed for some of the intersection stuff below)
+S=nrow(Data$Grid[[1]])
+for(it in 1:t.steps){
+  for(ipoly in 1:S){
+    Data$Grid[[it]]@polygons[[ipoly]]@ID=as.character(ipoly)
+  }
+}
 
 laea_180_proj <- paste("+proj=laea +lat_0=90 +lon_0=180 +x_0=0 +y_0=0",
                        "+datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0")
 #reproject onto BOSS Grid
 Tracks=spTransform(on_effort_tracks.sldf, CRS(laea_180_proj))
 Points=spTransform(fmclogs.spdf, CRS(laea_180_proj))
+Hotspots=spTransform(hotspots.spdf,CRS(laea_180_proj))
+Hotspots=Hotspots[which(Hotspots@data[,"species"]=="sd"),]  #limit to spotted seals
 
 Tracks$Day=rep(0,nrow(Tracks))
 Flt.ids=unique(Tracks$flightid)
@@ -37,10 +47,16 @@ myfun<-function(x)strsplit(x,'_')[[1]][1]
 Year=sapply(as.character(Flt.table[,"id"]),myfun)
 Yr12.ind=which(Year=="12")
 Flights=Flt.ids[Yr12.ind]
+
+Year=sapply(as.character(Hotspots@data[,"flightid"]),myfun)
+Yr12.ind=which(Year=="12")
+Hotspots=Hotspots[Yr12.ind,]
+
 # limit to 4/10-5/8
 Flights=Flights[-c(30,20,28,29,32,34,36)]
 Tracks=Tracks[which(Tracks$flightid %in% Flights),]
 Points=Points[which(Points$flightid %in% Flights),]
+Hotspots=Hotspots[which(Hotspots@data$flightid %in% Flights),]
 #decrease to 1 record every 4 seconds for computation of average swath diameter, time of survey
 I.point=rep(0,nrow(Points))
 #I.point[1:(ceiling(length(I.point)/10))*10-9]=1
@@ -50,8 +66,8 @@ Points=Points[which(Points$effort=="On"),]
 
 plot(Tracks,add=TRUE,col="blue")
 
+save(Tracks,file="2012_Tracks_for_ST_analysis.Rdata")
 
-S=nrow(Data$Grid[[1]])
 
 
 #intersect on effort spatial points with grid
@@ -69,6 +85,25 @@ Day=as.numeric(as.Date(Date,tz="PST8PDT")-date.start)+1 #make date.start = day 1
 #now get hour in UTC
 Date=format(Date,tz="UTC",usetz=TRUE)
 Hour=round(hour(Date)+minute(Date)/60) #round to nearest hour
+
+#similar intersection, date, time calculations with hotspots
+#int=gIntersects(Hotspots,Study.area,byid=TRUE) #all hotspots intersect study area
+#Hotspots=Hotspots[apply(int,2,'sum')==1,]
+int=gIntersects(Hotspots,Data$Grid[[1]],byid=TRUE)
+which.cell=function(x)which(x==1)
+Cell.id.hs=unlist(apply(int,2,which.cell))
+Date.hs=Hotspots$dt_utc
+
+
+Day.hs=as.numeric(as.Date(Date.hs,tz="PST8PDT")-date.start)+1 #make date.start = day 1
+pdf("Spotted_seal_count.pdf")
+hist(Day.hs,breaks=29,main='',xlab="Day",ylab="Spotted seal count")
+dev.off()
+
+#now get hour in UTC
+Date.hs=format(Date.hs,tz="UTC",usetz=TRUE)
+Hour.hs=round(hour(Date.hs)+minute(Date.hs)/60) #round to nearest hour
+
 
 #calculate swath widths for each on effort point (center, right, left depending on camera)
 myfun<-function(x)strsplit(x,'_')[[1]][2]
@@ -102,7 +137,7 @@ out <- do.call("rbind", vec)
 rn <- row.names(out)
 nrn <- do.call("rbind", strsplit(rn, " "))
 Length.df <- data.frame(Fl=nrn[,1], poly=as.numeric(as.character(nrn[,2])), len=gLength(out,byid=TRUE))
-Length.df$Day=rep(NULL,nrow(Length.df))
+Length.df$Day=rep(NA,nrow(Length.df))
 Length.df$Hour=Length.df$Day
 Length.df$diameter=Length.df$Day
 #calculate area surveyed for each of these flight_segment * grid cell combos
@@ -178,8 +213,17 @@ while(sum(I.processed)<nrow(Length.df)){
 Area.trans=Area.trans[1:icounter2]
 Mapping=Mapping[1:icounter2,]
 
-  
-Effort=list(Mapping=Mapping,Area.trans=Area.trans,Area.hab=Area.hab)
-save(Effort,file="Effort2012_BOSSst.Rdata")
+Count.data=data.frame(matrix(0,nrow(Mapping),4))
+colnames(Count.data)=c("Cell","Time","AreaSurveyed","Count")
+Count.data[,1:2]=Mapping[,1:2]
+Count.data[,3]=Area.trans
+for(irow in 1:nrow(Count.data)){
+  Which.entries=which(Day.hs==Mapping[irow,2] & Cell.id.hs==Mapping[irow,1])
+  if(length(Which.entries)>0)Count.data[irow,"Count"]=sum(as.numeric(Hotspots[Which.entries,]@data[,"numseals"]))
+}
+#cat(paste("Total hotspots: ", length(Cell.id.hs),". Total included in output data: ",sum(Count.data[,"Count"])))
+
+Effort=list(Mapping=Mapping,Area.trans=Area.trans,Area.hab=Area.hab,Count.data=Count.data)
+save(Effort,file="Effort2012_BOSSst_22Apr2014.Rdata")
 
 
