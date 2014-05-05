@@ -1,127 +1,3 @@
-#' generate initial values for if not already specified by user
-#' @param DM.hab.pois   a list of design matrices for the Poisson habitat model (elements are named sp1,sp2, etc.)
-#' @param DM.hab.bern   If a hurdle model, a list of design matrices for the Bernoulli habitat model (elements are named sp1,sp2, etc.) (NULL if not hurdle)
-#' @param N.hab.pois.par  vector giving number of parameters in the Poisson habitat model for each species
-#' @param N.hab.bern.par  vector giving number of parameters in the Bernoulli habitat model for each species (NULL if not hurdle)
-#' @param G.transect a matrix of the number of groups of animals in area covered by each transect; each row gives a separate species		
-#' @param Area.trans	a vector giving the proportion of a strata covered by each transect
-#' @param Area.hab	a vector of the relative areas of each strata
-#' @param Mapping	a vector mapping each transect to it's associated strata
-#' @param spat.ind  is spatial independence assumed? (TRUE/FALSE)
-#' @param grp.mean  a vector giving the pois1 parameter for group size (one entry for each species)
-#' @return a list of initial parameter values
-#' @export
-#' @keywords initial values, mcmc
-#' @author Paul B. Conn
-generate_inits_BOSS<-function(DM.hab.pois,DM.hab.bern,N.hab.pois.par,N.hab.bern.par,G.transect,Area.trans,Area.hab,Mapping,spat.ind,grp.mean){		
-  i.hurdle=1-is.null(DM.hab.bern)
-  n.species=nrow(G.transect)
-  n.cells=length(Area.hab)
-  hab.pois=matrix(0,n.species,max(N.hab.pois.par))
-  hab.bern=NULL
-  tau.eta.bern=NULL
-  Eta.bern=NULL
-  if(i.hurdle==1){
-    hab.bern=matrix(0,n.species,max(N.hab.bern.par))
-    tau.eta.bern=runif(n.species,0.5,2)
-    Eta.bern=matrix(rnorm(n.species*n.cells),n.species,n.cells)
-  }
-  Nu=matrix(0,n.species,n.cells)
-  for(isp in 1:n.species){
-    Nu[isp,]=log(max(G.transect[isp,])/mean(Area.trans)*exp(rnorm(length(Area.hab),0,0.1)))
-  }
-  Par=list(hab.pois=hab.pois,hab.bern=hab.bern,
-           Nu=Nu,Eta.pois=matrix(rnorm(n.species*n.cells),n.species,n.cells),Eta.bern=Eta.bern,
-           tau.eta.pois=runif(n.species,0.5,2),tau.eta.bern=tau.eta.bern,tau.nu=runif(n.species,0.5,2))
-  Par$hab.pois[,1]=log(apply(G.transect,1,'mean')/(mean(Area.trans)*mean(Area.hab))*exp(rnorm(n.species,0,1)))
-  Par$G=round(exp(Par$Nu)*Area.hab*exp(rnorm(length(Par$Nu))))
-  I.error=(G.transect>Par$G[Mapping])
-  if(sum(I.error)>0){
-    Which.error=which(G.transect>Par$G[Mapping])
-    for(i in 1:sum(I.error))Par$G[Mapping[Which.error[i]]]=Par$G[Mapping[Which.error[i]]]+G.transect[Which.error[i]]
-  }
-  for(isp in 1:n.species)Par$N[isp,]=Par$G[isp,]+rpois(n.cells,grp.mean[isp]*Par$G[isp,])
-  if(spat.ind==1){
-    Par$Eta.bern=0*Par$Eta.bern
-    Par$Eta.pois=0*Par$Eta.pois
-  }
-  Par
-}
-
-
-
-#' function to convert MCMC list vector (used in estimation) into an mcmc object (cf. coda package) 
-#' @param MCMC list vector providing MCMC samples for each parameter type 
-#' @param N.hab.pois.par see help for mcmc_ds.R
-#' @param N.hab.bern.par see help for mcmc_ds.R
-#' @param Cov.par.n see help for mcmc_ds.R
-#' @param Hab.pois.names see help for mcmc_ds.R
-#' @param Hab.bern.names see help for mcmc_ds.R
-#' @param Cov.names see help for mcmc_ds.R
-#' @param fix.tau.nu see help for mcmc_ds.R
-#' @param spat.ind see help for mcmc_ds.R
-#' @export
-#' @keywords MCMC, coda
-#' @author Paul B. Conn
-convert.BOSS.to.mcmc<-function(MCMC,N.hab.pois.par,N.hab.bern.par,Cov.par.n,Hab.pois.names,Hab.bern.names,Det.names,Cov.names,fix.tau.nu=FALSE,spat.ind=TRUE,point.ind=TRUE){
-  require(coda)
-  i.ZIP=!is.na(N.hab.bern.par)[1]
-  n.species=nrow(MCMC$Hab.pois)
-  n.iter=length(MCMC$Hab.pois[1,,1])
-  n.col=n.species*2+sum(N.hab.pois.par)+(1-spat.ind)*n.species+(1-fix.tau.nu)*n.species+sum(Cov.par.n)*n.species
-  if(i.ZIP)n.col=n.col+sum(N.hab.bern.par)+(1-spat.ind)*n.species #for ZIP model
-  n.cells=dim(MCMC$G)[3]
-  Mat=matrix(0,n.iter,n.col)
-  Mat[,1:n.species]=t(MCMC$N.tot)
-  counter=n.species
-  col.names=paste("Abund.sp",c(1:n.species),sep='')
-  for(isp in 1:n.species){
-    Mat[,counter+isp]=rowSums(as.matrix(MCMC$G[isp,,],nrow=n.iter,ncol=n.cells)) #total abundance of groups
-    col.names=c(col.names,paste("Groups.sp",isp,sep=''))
-  }
-  counter=counter+n.species
-  for(isp in 1:n.species){  #habitat parameters
-    Mat[,(counter+1):(counter+N.hab.pois.par[isp])]=MCMC$Hab.pois[isp,,1:N.hab.pois.par[isp]]
-    col.names=c(col.names,paste("Hab.pois.sp",isp,Hab.pois.names[[isp]],sep=''))
-    counter=counter+sum(N.hab.pois.par[isp])
-  }
-  if(i.ZIP){
-    for(isp in 1:n.species){  #habitat parameters
-      Mat[,(counter+1):(counter+N.hab.bern.par[isp])]=MCMC$Hab.bern[isp,,1:N.hab.bern.par[isp]]
-      col.names=c(col.names,paste("Hab.bern.sp",isp,Hab.bern.names[[isp]],sep=''))
-      counter=counter+sum(N.hab.bern.par[isp])
-    }   
-  }
-  if(spat.ind==FALSE){
-    Mat[,(counter+1):(counter+n.species)]=t(MCMC$tau.eta.pois)
-    col.names=c(col.names,paste("tau.eta.pois.sp",c(1:n.species),sep=''))
-    counter=counter+n.species
-  }
-  if(spat.ind==FALSE & i.ZIP){
-    Mat[,(counter+1):(counter+n.species)]=t(MCMC$tau.eta.bern)
-    col.names=c(col.names,paste("tau.eta.bern.sp",c(1:n.species),sep=''))
-    counter=counter+n.species
-  }
-  if(fix.tau.nu==FALSE){
-    Mat[,(counter+1):(counter+n.species)]=t(MCMC$tau.nu)
-    col.names=c(col.names,paste("tau.nu.sp",c(1:n.species),sep=''))
-    counter=counter+n.species
-  }
-  if(is.null(Cov.par.n)==FALSE){
-    max.par=max(Cov.par.n)
-    for(isp in 1:n.species){
-      for(ipar in 1:length(Cov.par.n)){
-        Mat[,(counter+1):(counter+Cov.par.n[ipar])]=MCMC$Cov.par[isp,,((ipar-1)*max.par+1):((ipar-1)*max.par+Cov.par.n[ipar])]
-        counter=counter+Cov.par.n[ipar]
-        col.names=c(col.names,paste("Cov.sp",isp,".",Cov.names[[ipar]],sep=''))
-      }
-    }
-  }
-  colnames(Mat)=col.names
-  Mat=mcmc(Mat)
-  Mat
-}
-
 
 #' function to calculate posterior predictive loss given the output object from ST analysis
 #' @param Out Output object from running spatio-temporal estimation routine
@@ -406,4 +282,26 @@ expit<-function(x)1/(1+exp(-x))
 #' @keywords logit
 #' @author Paul Conn \email{paul.conn@@noaa.gov}
 logit<-function(x)log(x/(1-x))
+
+#' estimate optimal 'a' parameter for linex loss function
+#' @param Pred.G  Predicted group abundance
+#' @param Obs.G  Observed group abundance
+#' @param min.a Minimum value for linex 'a' parameter
+#' @param max.a Maximum value for linex 'a' parameter
+#' @return The optimal tuning parameter for linex loss function as determined by minimum sum of squares 
+#' @export
+#' @keywords linex
+#' @author Paul B. Conn
+calc_linex_a<-function(Pred.G,Obs.G,min.a=0.00001,max.a=1.0){
+  #Y=apply(Obs.G,2,mean)
+  Y=Obs.G
+  linex_ssq<-function(a,X,Y){
+    Theta=exp(-a*X)
+    Theta=-1/a*log(apply(Theta,1,'mean'))
+    Theta=-1/a*log(Theta)
+    return(sum((Y-Theta)^2))
+  }
+  a=optimize(f=linex_ssq,interval=c(min.a,max.a),X=Pred.G,Y=Y)
+  a
+}
  
