@@ -1,13 +1,6 @@
 # run_generic_sims.R
 # script to run generic spatio-temporal count data simulations
-require(rgeos)
-source("./STabundance/R/sim_data_generic.R")
-source("./STabundance/R/sim_funcs.R")
-source("./STabundance/R/util_funcs.R")
-source("./STabundance/R/mcmc_STPC.R")
-source("./STabundance/R/mcmc_CPIF.R")
-source("./STabundance/R/mcmc_AST.R")
-source("./STabundance/R/mcmc_OPRS.R")
+require(STabundance)
 
 set.seed(12345)
 n.sims=100 #number of simulations at each design point

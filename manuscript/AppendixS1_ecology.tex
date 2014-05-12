@@ -1,0 +1,591 @@
+\documentclass[12pt,fleqn]{article}
+%\documentclass[12pt,a4paper]{article}
+\usepackage{natbib}
+\usepackage{lineno}
+%\usepackage{lscape}
+%\usepackage{rotating}
+%\usepackage{rotcapt, rotate}
+\usepackage{amsmath,epsfig,epsf,psfrag}
+\usepackage{setspace}
+\usepackage{ulem}
+\usepackage{xcolor}
+\usepackage[labelfont=bf,labelsep=period]{caption} %for making figure and table numbers bold
+\usepackage[colorlinks,bookmarksopen,bookmarksnumbered,citecolor=red,urlcolor=red]{hyperref}
+\hypersetup{pdfpagemode=UseNone}
+
+%\usepackage{a4wide,amsmath,epsfig,epsf,psfrag}
+
+
+\def\be{{\ensuremath\mathbf{e}}}
+\def\bx{{\ensuremath\mathbf{x}}}
+\def\bX{{\ensuremath\mathbf{X}}}
+\def\bthet{{\ensuremath\boldsymbol{\theta}}}
+\newcommand{\VS}{V\&S}
+\newcommand{\tr}{\mbox{tr}}
+%\renewcommand{\refname}{\hspace{2.3in} \normalfont \normalsize LITERATURE CITED}
+%this tells it to put 'Literature Cited' instead of 'References'
+\bibpunct{(}{)}{,}{a}{}{;}
+\oddsidemargin 0.0in
+\evensidemargin 0.0in
+\textwidth 6.5in
+\headheight 0.0in
+\topmargin 0.0in
+\textheight=9.0in
+%\renewcommand{\tablename}{\textbf{Table}}
+%\renewcommand{\figurename}{\textbf{Figure}}
+\renewcommand{\em}{\it}
+\renewcommand\thefigure{S1.\arabic{figure}}
+
+
+\begin{document}
+
+\begin{center} \bf {\large USING SPATIO-TEMPORAL STATISTICAL MODELS TO ESTIMATE ANIMAL ABUNDANCE AND INFER ECOLOGICAL DYNAMICS FROM SURVEY COUNTS}
+
+\vspace{0.7cm}
+Paul B. Conn$^{1*}$, Devin S. Johnson$^1$, Jay M. Ver Hoef$^1$, Mevin B. Hooten$^{2,3,4}$, Josh M. London$^1$, and Peter L. Boveng$^1$
+\end{center}
+\vspace{0.5cm}
+
+\rm
+\small
+
+\it $^1$National Marine Mammal Laboratory, Alaska Fisheries Science Center,
+NOAA National Marine Fisheries Service,
+Seattle, Washington 98115 U.S.A.\\
+
+\it $^2$U.S. Geological Survey, Colorado Cooperative Fish and Wildlife Research Unit, Colorado State University, Fort Collins, CO 80523 U.S.A.\\
+
+\it $^3$Department of Fish, Wildlife, and Conservation Biology, Colorado State University, Fort Collins, CO 80523 U.S.A.\\
+
+\it $^3$Department of Statistics, Colorado State University, Fort Collins, CO 80523 U.S.A.\\
+
+\rm \begin{flushleft}
+
+\raggedbottom
+\vspace{.5in}
+
+\begin{center}
+Appendix S1: Gibbs sampling for estimating spatio-temporal abundance from survey counts
+\bigskip
+\end{center}
+\vspace{.3in}
+
+\doublespacing
+For each spatio-temporal model fit to animal survey counts, we used Gibbs sampling \citep[see e.g.,][]{GelmanEtAl2004} to obtain Markov chain Monte Carlo samples from the posterior distribution of model parameters given the data.  Parameters were iteratively sampled from their full conditional distributions, some of
+which were available in closed form, and some of which had to be sampled using Metropolis-Hastings (MH) steps.  For each spatio-temporal model structure considered, we provide a fuller mathematical treatment than in the main manuscript, provide details on prior distributions, and describe the full conditional distributions necessary for Gibbs sampler construction.  Throughout this treatment, we use several standard statistical conventions.  For instance, we use the bracket notation $[X]$ to denote the distribution (e.g., through a joint probability density function) of $X$, $[X|Y]$ to denote the conditional distribution of $X$ given $Y$, and bold symbols to denote vectors or matrices of parameters. We use prime notation (e.g., ${\bf X}^\prime$) to denote matrix transpose, while matrix inverse is denoted by ${\bf X}^{-1}$. Unless noted differently, we use a Gaussian kernel centered at previous parameter values to generate parameter proposals for MH updates, with a standard deviation tuned to yield an acceptance rate of $30-40\%$ \citep{GelmanEtAl2004}.  Software to implement these models on real datasets are provided in an online supplement, and are available online at \url{https://github.com/NMML/STabundance}.
+
+\section{Additive space-time (AST) model}
+
+The first type of spatio-temporal model that we implemented was a separable space-time model where spatial and temporal random effects are modeled independently.  \citet{VerHoefJansen2007} used such a model to successfully model harbor seal abundance from survey counts.  This formulation is attractive due to the potentially small number of random effect parameters relative to a model with space-time interactions, but is restrictive in the sense that it does not permit residual spatial error to vary over time.  Assuming that count data are available on spatially referenced sampling units, we write the joint posterior distribution of latent abundance ($\boldsymbol{\mu}$) and other model parameters given data as
+\begin{eqnarray}
+  [\boldsymbol{\mu},\boldsymbol{\theta} | {\bf C},{\bf o}] & \propto & [{\bf C} | {\bf o}, \boldsymbol{\mu}] [\boldsymbol{\mu} | \boldsymbol{\theta}] [\theta],
+  \label{eq:hmod}
+\end{eqnarray}
+where $\boldsymbol{\theta}$ denote the collection of all parameters other than latent abundance, ${\bf C}$ denote temporally and spatially referenced animal counts, and ${\bf o}$ denote linear model offsets used to encapsulate the amount of area sampled in different sampling units.  Note also that our convention throughout this treatment is to omit covariate data ${\bf x}$ from distributional expressions (for instance, $\boldsymbol{\mu}$ may also be dependent on habitat covariates to help predict abundance, as described later).
+
+\hspace{.5in} The observation model $[{\bf C} | {\bf o}, \boldsymbol{\mu}]$ describes how count data arise from different levels of sampling effort and latent abundance parameters.  For purposes of the AST model, we make the assumption that count data are Poisson distributed:
+\begin{eqnarray}
+  [{\bf C} | {\bf o}, \boldsymbol{\mu}] & \equiv & \textrm{Poisson}({\bf \lambda}), \textrm{ where} \nonumber \\
+  \boldsymbol{\lambda} & = & \exp \left( {\bf o} + {\bf H}\boldsymbol{\mu} \right).
+  \label{eq:cmod}
+\end{eqnarray}
+Here, the matrix ${\bf H}$ is constructed in such a manner to select elements of the full set of space- and time-specific $\boldsymbol{\mu}$ values for which sampling effort is actually applied.
+
+\hspace{.5in} We adopt a log-linear formulation for the process model  $[\boldsymbol{\mu} | \boldsymbol{\theta},{\bf x}]$, and in this instance include additive spatial and temporal random effects:
+\begin{eqnarray*}
+  \boldsymbol{\mu}_t & = & {\bf X}_{t} \boldsymbol{\beta} + \boldsymbol{\eta} + \gamma_t + \boldsymbol{\epsilon}_t.
+\end{eqnarray*}
+In particular, time-specific vectors of the log of abundance intensity ($\boldsymbol{\mu}_t$) are written in a regression-like framework that includes a time-specific design matrix ${\bf X}_t$, regression parameters $\boldsymbol{\beta}$, spatial random effects $\boldsymbol{\eta}$, temporal random effects, $\gamma_t$, and residual Gaussian-distributed error.
+
+\hspace{.5in} To impose spatial structure on $\boldsymbol{\eta}$, we employed a process-convolution formulation \citep[see e.g.,][]{Higdon1998,CalderEtAl2002}, whereby
+\begin{eqnarray}
+   \boldsymbol{\eta} & = & {\bf K} \boldsymbol{\alpha}.
+ \label{eq:reduced-spat}
+\end{eqnarray}
+Here, the $1 \times m$ dimensional vector $\boldsymbol{\alpha}$ holds spatial random effects on a reduced parameter space.  The reduced parameter space is achieved by distributing a total of $m$ knots evenly across the landscape, and associating a Gaussian kernel with each such knot. Under this formulation, the random effects $\boldsymbol{\alpha}$ are equivalent to weights on each of the Gaussian kernels.  The $S \times m$ dimensional matrix ${\bf K}$ maps the random effects (or weights) to $S$-dimensional space.  The entries in ${\bf K}$ are proportional to distance-specific kernel densities used to interpolate between the $m$ knots and the $S$ spatio-temporal locations being modeled.  With rich datasets, it is possible to computationally intensive algorithms to optimize values for the elements of ${\bf K}$ (and to induce anisotropy), but we will typically not be so lucky in ecological applications.  Thus, in subsequent examples we adopt the commonly used practice of setting the standard deviations for each kernel ($\sigma$) equal to the distance between knot locations, and setting the $i$th row and $j$th column of ${\bf K}$ to $N(d_{ij}; 0,\sigma^2)$, where $N$ denotes a standard Gaussian probability density function and $d_{ij}$ gives the distance from the centroid of sampling unit $i$ to the location of knot $j$.  The elements of ${\bf K}$ are then renormalized so that rows sum to 1.0.
+As is typical in such applications, we model the random effects $\boldsymbol{\alpha}$, as iid Gaussian with mean zero and precision $1/\tau_\eta$.
+
+\hspace{.5in} We account for temporal autocorrelation by assigning an RW2($\tau_\gamma$) prior distribution \citep[see e.g.,][section 3.4]{RueHeld2005} to temporal random effects.  Implemented using Gaussian Markov random field (GMRF) machinery \citep[again see][for a thorough treatment]{RueHeld2005}, this prior imposes temporal dependence among the $\boldsymbol{\gamma}$  and a greater degree of smoothness than a simpler RW1 structure (a potentially useful feature for analysis of typically sparse ecological datasets).
+
+\hspace{.5in} We must of course assign prior distributions to the lowest level parameters in $\boldsymbol{\theta}$ in order to conduct Bayesian inference.  Our strategy is to use the following choices:
+\begin{eqnarray*}
+  \boldsymbol{\beta} & \textrm{Regression parameters} & {\rm MVN}({\bf 0},(\tau_\beta X^\prime X)^{-1}) \\
+  \tau_\eta,\tau_\epsilon,\tau_\gamma & \textrm{Gaussian precisions} & \textrm{Gamma}(1.0,0.01).
+  \label{eq:priors}
+\end{eqnarray*}
+Here, we use MVN to denote the multivariate normal distribution, and set $\tau_\beta=0.01$ in all applications.  We chose 1.0 and 0.01 for the shape and rate parameters on the conjugate Gamma prior for precision parameters because these values make the prior reasonably flat near the origin, which seems to impart a greater degree of stability in estimation than many other common choices.
+
+\subsection{Bayesian analysis of the AST model}
+
+We used Gibbs sampling to cycle through updates of different groups of parameters and latent variables.  This process involves sampling from the so-called full conditional distributions of these parameters \citep{GelmanEtAl2004}, which are specified as follows:
+
+\underline{1. Updating $\boldsymbol{\mu}$ for surveyed sample units}
+
+For each sample unit $s$ surveyed at a given time $t$, $\mu_{s,t}$ is updated with a MH step, with
+full conditional
+\begin{equation*}
+  [\mu_{s,t} | \cdot] \propto \textrm{Normal}(\mu_{s,t};{\bf X}_{s,t} \boldsymbol{\beta} + \eta_s + \gamma_t,\tau_\epsilon^{-0.5}) \times \textrm{Poisson}(C_{s,t},\exp(o_{s,t}+\mu_{s,t})).
+\end{equation*}
+
+\underline{2. Updating $\boldsymbol{\beta}$}
+
+The full conditional distribution for $\boldsymbol{\beta}$ is available in closed form; we use a Gibbs step to sample from
+\begin{equation*}
+  [\boldsymbol{\beta} | \cdot] \equiv \textrm{Normal}(({\bf X}^\prime {\bf X})^{-1}{\bf X}^\prime (\boldsymbol{\mu} - \boldsymbol{\eta} - \boldsymbol{\gamma}),({\bf X}^\prime {\bf X})^{-1} (\tau_\epsilon + \tau_\beta)^{-1}).
+\end{equation*}
+Note that only surveyed sample units are included in this update (e.g., the design matrix ${\bf X}$ and random effect vectors are constructed using sample units at times and locations where surveys are conducted).
+
+\underline{3. Updating $\tau_\epsilon$}
+
+The full conditional distribution for the precision of exchangable errors is also available in closed form as
+\begin{equation*}
+  [\tau_\epsilon | \cdot] \equiv \textrm{Gamma}(0.5n + 1.0,0.5 \boldsymbol{\Delta}^\prime \boldsymbol{\Delta} + 0.01),
+\end{equation*}
+and can be simulated from directly.
+ Here, $\boldsymbol{\Delta} = \boldsymbol{\mu}- ({\bf X} \boldsymbol{\beta} + \boldsymbol{\eta} + \boldsymbol{\gamma})$, and once again we only use surveyed sample units to construct the elements of each matrix and vector.
+
+\underline{4. Updating $\boldsymbol{\alpha}$}
+
+The full conditional distribution for $\boldsymbol{\alpha}$ is available in closed form as
+\begin{equation*}
+  [\boldsymbol{\alpha} | \cdot] \equiv \textrm{MVN}({\bf m}_{\alpha},{\bf v}_{\alpha}),
+\end{equation*}
+(where MVN denotes the multivariate normal probability density function) and can also be simulated from directly.  The variance-covariance matrix $v_{\alpha}$ of the full conditional can be written as
+\begin{equation*}
+  {\bf v}_{\alpha} = ({\bf K}^{\prime}{\bf K} \tau_\epsilon + \mathcal{D}(\tau_\eta))^{-1},
+\end{equation*}
+where $\mathcal{D}(\tau_\eta)$ here gives an $m \times m$ diagonal matrix with diagonal entries all equal to $\tau_\eta$.  The mean of the full conditional is given by
+\begin{equation*}
+  {\bf m}_{\alpha} = {\bf v}_\alpha \tau_\epsilon {\bf K}^\prime (\boldsymbol{\mu}- {\bf X} \boldsymbol{\beta} - \boldsymbol{\gamma})
+\end{equation*}
+As in previous steps, we only use surveyed sample units to construct the elements of each matrix and vector included in this full conditional.
+
+\underline{5. Updating $\tau_\eta$}
+
+The precision $\tau_\eta$ is also available in closed form and can be simulated directly via the full conditional
+\begin{equation*}
+  [\tau_\eta | \cdot] \equiv \textrm{Gamma}(0.5m + 1.0,0.5 \boldsymbol{\alpha}^\prime \boldsymbol{\alpha} + 0.01).
+\end{equation*}
+
+\underline{6. Updating $\boldsymbol{\gamma}$}
+
+The full conditional for temporal random effects is also available in closed form as
+\begin{equation*}
+  [\boldsymbol{\gamma} | \cdot] \equiv \textrm{MVN}({\bf m}_{\gamma},{\bf v}_{\gamma})
+\end{equation*}
+and can be simulated directly.  The variance-covariance matrix $v_{\gamma}$ can be written as
+\begin{equation*}
+  {\bf v}_{\gamma} = (\tau_\epsilon {\bf Z}^\prime {\bf Z} + \tau_\gamma{\bf Q})^{-1},
+\end{equation*}
+where ${\bf Z}$ is an $(n \times T)$ design matrix linking each observed count with an associated time step (thus the elements of {\bf Z}, $z_{ij}$, are 1.0 if observation $i$ was obtained at time step $j$ and zero otherwise), and where ${\bf Q}$ is the structure matrix for an RW2 intrinsic GMRF \citep[see][section 3.4]{RueHeld2005}.  The mean of the full conditional is given by
+\begin{equation*}
+  {\bf m}_{\gamma} = {\bf v}_\gamma \tau_\epsilon {\bf Z}^\prime (\boldsymbol{\mu}- {\bf X} \boldsymbol{\beta} - \boldsymbol{\eta}).
+\end{equation*}
+
+\underline{7. Updating $\tau_\gamma$}
+
+The precision $\tau_\gamma$ is also available in closed form and can be simulated directly via the full conditional
+\begin{equation*}
+  [\tau_\gamma | \cdot] \equiv \textrm{Gamma}(0.5T + 1.0,0.5 \boldsymbol{\gamma}^\prime {\bf Q}^\prime \boldsymbol{\gamma} + 0.01).
+\end{equation*}
+
+
+\underline{Generating posterior predictions of abundance}
+
+To predict animal abundance in locations and times that were not sampled, we first sampled $\boldsymbol{\mu}$ as
+\begin{equation*}
+  \boldsymbol{\mu} \sim \textrm{Normal}({\bf X} \boldsymbol{\beta} + \boldsymbol{\eta} + \boldsymbol{\gamma},\tau_\epsilon^{-1}),
+\end{equation*}
+where the design matrix ${\bf X}$ and vectors $\boldsymbol{\mu}$, $\boldsymbol{\eta}$, and $\boldsymbol{\gamma}$ are in this case understood to be composed of unique times and sampling units which are not surveyed.
+Predictions of abundance across the grid can then be made using
+\begin{equation*}
+  N_{st} \sim \textrm{Poisson}(A_s \exp(\mu_{s,t}),
+\end{equation*}
+where $A_s$ gives the area of sample unit $s$ relative to the mean sample unit area.  Predictions of animal at
+each time step can simply be calculated as $N = \sum_s N_{s,t}$.
+
+\section{Spatio-temporal process convolution (STPC) model}
+
+The STPC model shares many similarities with the AST model, but allows for spatio-temporal interactions.  We start
+with the same general structure and observation model as for the AST model, as given by eqns. \ref{eq:hmod} \& \ref{eq:cmod}.  However, the log of abundance intensity is in this case written as a function of a spatio-temporal
+effect, $\kappa_{s,t}$:
+\begin{eqnarray*}
+  \boldsymbol{\mu} & = & {\bf X} \boldsymbol{\beta} + \boldsymbol{\kappa} + \boldsymbol{\epsilon}_t.
+\end{eqnarray*}
+As before, we will write the $\boldsymbol{\kappa}$ as a function of spatio-temporal parameters on a reduced dimensional space associated with $m$ knots placed evenly across the landscape, writing
+\begin{eqnarray*}
+  \boldsymbol{\kappa} = {\bf L} \boldsymbol{\alpha}.
+\end{eqnarray*}
+However, in this case, there are a total of $mT$ $\alpha_{kt}$ values (one for each knot and time step), and ${\bf L}$ is an $(ST \times mT)$ matrix used to map spatio-temporal grid cells to respective $\alpha_{kt}$ values.  The entries of ${\bf L}$ include values from the ${\bf K}$ matrix from the previous section, rearranged to pull off appropriate values of $\boldsymbol{\alpha}$, and is constructed as follows:
+\begin{eqnarray*}
+  {\bf L} & = & \left[ \begin{array}{cccccccc}
+      K_{11} & {\bf 0}_{T-1} & K_{12} & {\bf 0}_{T-1} & \hdots & K_{1m} & {\bf 0}_{T-2} & 0\\
+      K_{21} & {\bf 0}_{T-1} & K_{22} & {\bf 0}_{T-1} & \hdots & K_{2m} & {\bf 0}_{T-2} & 0\\
+      \vdots &  \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+      K_{S1} & {\bf 0}_{T-1} & K_{S2} & {\bf 0}_{T-1} & \hdots & K_{Sm} & {\bf 0}_{T-2} & 0\\
+      0 & K_{11} & {\bf 0}_{T-1} & K_{12} & {\bf 0}_{T-1} & \hdots & K_{1m} & {\bf 0}_{T-2} \\
+      0 & K_{21} & {\bf 0}_{T-1} & K_{22} & {\bf 0}_{T-1} & \hdots & K_{2m} & {\bf 0}_{T-2} \\
+      \vdots &  \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+      0 & K_{S1} & {\bf 0}_{T-1} & K_{S2} & {\bf 0}_{T-1} & \hdots & K_{Sm} & {\bf 0}_{T-2} \\
+      \vdots &  \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+      \vdots &  \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+      {\bf 0}_{T-1} & K_{S1} & {\bf 0}_{T-1} & K_{S2} & {\bf 0}_{T-1} & \hdots & {\bf 0}_{T-1} & K_{Sm} \\
+  \end{array}   \right].
+\end{eqnarray*}
+Here, ${\bf 0}_{x}$ denotes an all zero row vector of length $x$.  We allow the
+$\alpha_{kt}$ parameters to change smoothly over time by giving $\alpha_{kt}$ values at each knot $k$ an RW2 Gaussian Markov random field prior distribution \citep{RueHeld2005}.  However, the RW2 prior is degenerate by an order of two; we restore propriety by following the suggestion of \citet{JohnsonEtAl2013b} and including separate intercept and slope terms for the $\alpha_{kt}$ parameters at each knot, giving these intercept and slope terms proper priors.  In particular, we model
+\begin{eqnarray*}
+  \boldsymbol{\alpha} & = & {\bf X}_0^{rw2} \boldsymbol{\beta}_0^{rw2} + {\bf X}_1^{rw2} \boldsymbol{\beta}_1^{rw2}
+   + \boldsymbol{\varpi},
+\end{eqnarray*}
+where ${\bf X}_0^{rw2}$ is a design matrix for the intercept term associated with each knot, ${\bf X}_1^{rw2}$ is an design matrix associated with the linear slope effect for each knot,  $\boldsymbol{\beta}_0^{rw2}$ give intercepts for each knot, $\boldsymbol{\beta}_1^{rw2}$ give slope parameters for each knot, and $\boldsymbol{\varpi} \sim \mathcal{N}(\bf 0,\tau_\alpha {\bf Q}^*) $ denote random effects with precision parameter $\tau_\gamma$ and a $(mT \times mT)$ block diagonal structure matrix:
+\begin{eqnarray*}
+  {\bf Q}^* & = & \left[ \begin{array}{cccc}
+      {\bf Q} & {\bf 0} & \hdots & {\bf 0} \\
+      {\bf 0} & {\bf Q} & \hdots & {\bf 0} \\
+      \vdots &  \vdots & \ddots & \vdots \\
+      {\bf 0} & {\bf 0} & \hdots & {\bf Q} \\
+  \end{array}   \right]
+\end{eqnarray*}
+({\bf Q} being the ``standard" RW2 structure matrix for a single time series).  For each knot $k$, the $\boldsymbol{\varpi}$ are constrained to have a mean and slope of 0.
+We specify prior distributions for regression and Gaussian precision parameters in the same manner as for the AST model (cf., eqn. \ref{eq:priors}), but impose informative priors on the $\boldsymbol{\beta}_0^{rw2}$ and $\boldsymbol{\beta}_1^{rw2}$ parameters.  In particular, for all of our applications, we let each of element of $\boldsymbol{\beta}_0^{rw2}$ have a $\mathcal{N}(0,\tau_{\beta_0}^{-1})$ prior distribution, and each element of $\boldsymbol{\beta}_1^{rw2}$ have a $\mathcal{N}(0,\tau_{\beta_1}^{-1})$ prior.  We selected $\tau_{\beta_0} = 1$ and $\tau_{\beta_1} = 10$ so as to permit considerable unmodeled spatio-temporal variation in the log of abundance intensity, while providing enough structure to limit the chance of extrapolating ``past the range of observed data" for times and locations where the density of sampling efforts is low.
+
+\subsection{Bayesian analysis of the STPC model}
+
+Bayesian analysis of the STPC model largely followed the approach used for AST model, with the exception that instead of separate spatial ($\boldsymbol{\eta}$) and temporal ($\boldsymbol{\gamma}$) effects, there is a single spatio-temporal effect, $\boldsymbol{\kappa}$.  In fact, steps 1-3 of the STPC Gibbs sampler are exactly the same as for the AST model, as is the approach for generating posterior predictions of abundance, and simply require placing $\boldsymbol{\eta}+\boldsymbol{\gamma}$ with $\boldsymbol{\kappa}$.  The remaining steps are as follows:
+
+\underline{4. Updating $\boldsymbol{\beta}_0^{rw2}$ and $\boldsymbol{\beta}_0^{rw2}$}:
+
+To update knot-specific intercept and slope parameters, we first let ${\bf X}_{rw2} = [{\bf X}_0^{rw2} \hspace{2mm} {\bf X}_1^{rw2}]$, $\boldsymbol{\beta}_{rw2}=[\boldsymbol{\beta}_0^{rw2} \hspace{2mm} \boldsymbol{\beta}_1^{rw2}]^\prime$, and $\Sigma^{-1} = \mathcal{D}({\bf 1} \tau_{\beta_0} \hspace{2mm} {\bf 1} \tau_{\beta_1})$, where $\mathcal{D}$ denotes a diagonal matrix, and ${\bf 1}$ is a column vector of length $m$. The full conditional distribution for $\boldsymbol{\beta}_{rw2}$ is then available in closed form as
+\begin{eqnarray*}
+  [\boldsymbol{\beta}_{rw2} | \cdot] \equiv \textrm{MVN}({\bf m}_{b},{\bf v}_{b}) \text{, where}
+\end{eqnarray*}
+\begin{eqnarray*}
+  {\bf v}_{b}^{-1} & = & ({\bf L}{\bf X}_{rw2})^\prime ({\bf L}{\bf X}_{rw2}) \tau_\epsilon + \Sigma^{-1} \text{, and}
+\end{eqnarray*}
+\begin{eqnarray*}
+  {\bf m}_{b} & = & {\bf v}_b \tau_\epsilon ({\bf L}{\bf X}_{rw2})^\prime (\boldsymbol{\mu}- {\bf X} \boldsymbol{\beta} - {\bf L} \boldsymbol{\varpi}).
+\end{eqnarray*}
+
+\underline{6. Updating $\boldsymbol{\varpi}$}
+
+The full conditional distribution for $\boldsymbol{\varpi}$ is also available in closed form as
+\begin{eqnarray}
+  \label{eq:varpi}
+  [\boldsymbol{\varpi} | \cdot] & \equiv & \textrm{MVN}({\bf m}_{\varpi},{\bf v}_{\varpi}),
+\end{eqnarray}
+and can also be simulated from directly.  The inverse of the variance-covariance matrix $v_{\alpha}$ for the full conditional can be written as
+\begin{eqnarray*}
+  {\bf v}_{\alpha}^{-1} & = & ({\bf L}^{\prime}{\bf L} \tau_\epsilon + \tau_\alpha {\bf Q}^*)^{-1},
+\end{eqnarray*}
+where ${\bf Q}^*$ gives the $mT \times mT$ block diagonal matrix defined in the previous section.
+The mean of the full conditional is given by
+\begin{eqnarray*}
+  {\bf m}_{\alpha} & = & {\bf v}_\alpha \tau_\epsilon {\bf L}^\prime (\boldsymbol{\mu}- {\bf X} \boldsymbol{\beta} - {\bf L}{\bf X}_{rw2}\boldsymbol{\beta}_{rw2}).
+\end{eqnarray*}
+For each knot, we impose a zero mean and zero slope constraint on the $\boldsymbol{\alpha}_{k \cdot}$ using ``conditioning by Kriging" \citep[cf.,][, Eq. 2.30]{RueHeld2005}.  In particular, we first simulate $\boldsymbol{\varpi}$ using the unconstrained distribution given in Eq. \ref{eq:varpi}.  We then calculate a constrained sample $\breve{\boldsymbol{\varpi}}$ as
+\begin{eqnarray*}
+  \breve{\boldsymbol{\varpi}} & = & \boldsymbol{\varpi}-{\bf v}_{\alpha}^{-1}{\bf A}^\prime ({\bf A}{\bf v}_{\alpha}^{-1} {\bf A}^\prime)^{-1}{\bf A} \boldsymbol{\varpi},
+\end{eqnarray*}
+where ${\bf A} = ({\bf X}_{rw2}^\prime {\bf X}_{rw2})^{-1} {\bf X}_{rw2}^\prime$.
+
+\underline{6. Updating $\tau_\alpha$}
+
+The precision $\tau_\eta$ is also available in closed form and can be simulated directly via the full conditional
+\begin{eqnarray*}
+  [\tau_\eta | \cdot] \equiv \textrm{Gamma}(0.5mT + 1.0,0.5 \boldsymbol{\alpha}^\prime \boldsymbol{\alpha} + 0.01).
+\end{eqnarray*}
+
+\section{Open population resource selection (OPRS) model}
+
+As with the AST and STPC models, the OPRS formulation makes use of a Poisson observation model, such that
+\begin{eqnarray*}
+  C_{s,t} & \sim & \textrm{Poisson}(\lambda_{s,t}).
+\end{eqnarray*}
+However, we alter the formulation for $\lambda_{s,t}$ to allow for dynamical resource selection.  In
+particular, we set
+\begin{eqnarray*}
+  \lambda_{s,t} & = & \exp(o_{s,t} + Z_{s,t}), \textrm{ where}
+\end{eqnarray*}
+\begin{eqnarray}
+  {\bf Z}_t & \sim & \textrm{MVN}(\boldsymbol{\mu}_t,\Sigma_Z) \textrm{ and}
+  \label{eq:Z}
+\end{eqnarray}
+\begin{eqnarray}
+  \boldsymbol{\mu}_t & = &  \begin{cases}
+                    {\bf X}_1 \boldsymbol{\beta} + \boldsymbol{\eta} + \boldsymbol{\epsilon}_1 & \text{if }t=1 \\
+                     {\bf M}_t \boldsymbol{\mu}_{t-1} + \gamma_t + \boldsymbol{\epsilon}_t & \text{if }t>1.
+                  \end{cases}
+  \label{eq:mu.OPRS}
+\end{eqnarray}
+Here, $\Sigma_z = \tau_z^{-1} \mathcal{I}$ is a diagonal covariance matrix, ${\bf X}_{1}$ is a design matrix specific to the time step at which initial surveys are conducted, and other parameters are defined in the same manner as for the AST model. After the first time step, changes in abundance between time steps are governed by a resource selection-based transition matrix ${\bf M}_t$, and also subject to $\gamma_t$, a temporally autocorrelated random effect (as in previous models $\boldsymbol{\epsilon}_t$ is Gaussian white noise).
+The astute reader may notice that we have included Gaussian error in two places (i.e., in both eqns \ref{eq:Z} and \ref{eq:mu.OPRS}).  We also model $\gamma_t$ using an AR1 process instead of an RW2 process. These modifications were made to increase the efficiency of MCMC computation (see below).
+
+\hspace{.5in}To construct an ecologically plausible transition matrix ${\bf M}_t$, we appeal to discrete-space resource selection theory employing weighted distributions \citep[cf.,][]{PatilRao1978,LeleKeim2006,JohnsonEtAl2008}.  In such applications, the probability of transitioning from a particular location $a$ at time $t-1$ to location $b$ at time $t$ is given as
+\begin{eqnarray*}
+  \psi^{ab}_t & = & \frac{w_{b,t} \varphi_{a,b}}{\sum_s w_{s,t} \varphi_{a,s}}. \label{eq:psi}
+\end{eqnarray*}
+This formulation involves two components: a measure of habitat preference for location $s$ at time $t$ ($w_{s,t}$), and a redistribution kernel consisting of the elements $\varphi_{a,s}$.  The redistribution kernel describes animal movement in absence of a gradient in habitat quality.  We use a truncated, symmetric normal distribution kernel to summarize $\varphi_{a,s}$ in all applications, thus approximating simple Brownian (diffusive) movement:
+\begin{eqnarray*}
+  \varphi_{a,b} & \propto & \textrm{Normal}(d(a,b),\tau_d^{-1}), \label{eq:varphi}
+\end{eqnarray*}
+Here, $d(a,b)$ simply gives the Euclidean distance between the centroid of sample units $a$ and $b$, and $\tau_d$ is a precision parameter to be estimated.  We specify further structure on $w_{s,t}$ using a log-linear formulation:
+\begin{eqnarray*}
+  \log({\bf w}_t) & = & {\bf X}_t \boldsymbol{\beta}, %\label{eq:logw}
+\end{eqnarray*}
+where the design matrix ${\bf X}_t$ is allowed to vary over time to reflect changing environmental and habitat covariates.  An intercept is omitted from ${\bf X}_t$ as it is not identifiable.
+
+\hspace{.5in}The matrix ${\bf M}_t$ is constructed using values of $\psi_t^{ab}$ in a computationally efficient framework.  In particular,
+\begin{eqnarray}
+  {\bf M}_t & = & ({\bf W}_t^{-1} \boldsymbol{\varphi}_t {\bf I}_{w_t})^\prime, \label{eq:M}
+\end{eqnarray}
+where each row $a$ of the $S \times S$ matrix $\boldsymbol{\varphi}_t$ holds entries corresponding to $\psi_t^{ab}$ ($b \in \{ 1,2,\hdots,S \}$), and ${\bf I}_{w_t}$ is a diagonal matrix with elements ${\bf w}_t$ along the main diagonal.  The  ${\bf W}_t$ matrix provides normalization (i.e., so all rows of ${\bf M}_t$ sum to one), and is calculated as ${\bf W}_t = \boldsymbol{\varphi}_t {\bf I}_{w_t} {\bf 1}$, where ${\bf 1}$ is an $(S \times 1)$ vector with each element equal to 1.0.
+
+\hspace{.5in}  The previous formulation of the OPRS model induces a joint posterior distribution specified by
+\begin{eqnarray}
+  [{\bf Z},\boldsymbol{\mu},\boldsymbol{\theta}| {\bf C},{\bf o}] & \propto & [{\bf C} | {\bf o}, {\bf Z}][{\bf Z} | \boldsymbol{\mu},\boldsymbol{\theta}] [\boldsymbol{\mu} | \boldsymbol{\theta}] [\theta],
+  \label{eq:hmod}
+\end{eqnarray}
+where we use $\boldsymbol{\theta}$ to denote the set of parameters consisting of $ \{ \boldsymbol{\alpha},\boldsymbol{\beta},\tau_d,\tau_\eta,\tau_\gamma,\tau_z \}$.
+
+\hspace{.5in}To analyze the OPRS model, we need to assign prior distributions to several model parameters.  We selected the following priors for all analyses:
+\begin{eqnarray*}
+  \beta_i & \textrm{Regression parameters} & \textrm{Normal}(0,100) \\
+  \tau_\epsilon, \tau_\eta, \tau_\gamma, \tau_d  & \textrm{Gaussian precisions} & \textrm{Gamma}(1.0,0.01) \\
+  \sigma & \textrm{AR1 parameter} & \textrm{Uniform}(0.0,1.0)
+   \label{eq:priors}
+\end{eqnarray*}
+
+
+
+\subsection{Bayesian analysis of the OPRS model}
+
+
+\underline{1. Updating ${\bf Z}$}
+
+The full conditional distribution for ${\bf_Z}$ differs depending on whether surveys occur in site $s$ at time $t$. Letting $\mathcal{S}_t$ denote the set of sampling units surveyed at time $t$, and $\mathcal{U}_t$ denote the set of sampling units not surveyed at time $t$:
+\begin{eqnarray*}
+  [{\bf Z}|\cdot] \equiv \begin{cases}
+                   \textrm{Poisson}(C_{s,t};\exp(o_{s,t} + Z_{s,t})) \times \textrm{Normal}(Z_{s,t}; 0,\tau_z^{-1}) & \textrm{if } s \in \mathcal{S}_t \\
+                     \textrm{Normal}(Z_{s,t}; 0,\tau_z^{-1}) & \textrm{if } s \in \mathcal{U}_t.
+                  \end{cases}
+\end{eqnarray*}
+Thus, for unsurveyed cells, $Z_{s,t}$ can be simulated directly from a normal distribution, while another approach
+is needed if $s \in \mathcal{S}$.  Our approach in this study is to use separate Langevin-Hastings steps \citep[see e.g.,][section 7.1.4]{GivensHoeting2005} for each
+time step $t$ to simulate values of ${\bf Z}_t$ for which $s \in \mathcal{S}_t$.  The Langevin algorithm exploits the first derivative of the log of the full conditional for efficient proposal generation.  The algorithm was tuned to achieve target acceptance rates of 20-30\%, a desirable range for higher dimensional block updates \citep{GelmanEtAl2004}.
+
+\underline{2. Updating $\boldsymbol{\mu}$}
+
+In order to update $\boldsymbol{\mu}$, we make use of a forward filtering, backward sampling algorithm formulated for state space time series models \citep{DurbinKoopman2002}.  This algorithm
+makes use of Kalman filtering/smoothing methodology, but works with ``disturbances" (the Gaussian errors) rather than the actual state and observation vectors to speed up computation.  This approach requires Gaussian errors on ``state" and ``observation" vectors.  To make use of this algorithm, we first make several adjustments.  First, we write an expanded state vector as
+\begin{eqnarray*}
+  \boldsymbol{\Theta}_t = \left[  \begin{array}{c} \boldsymbol{\mu}_t \\ \gamma_t \end{array} \right],
+\end{eqnarray*}
+and define an expanded transition matrix as
+\begin{eqnarray*}
+  \mathcal{M}_t = \left[  \begin{array}{cc} \bf{M}_t & {\bf 1} \\ {\bf 0} & \sigma \end{array} \right],
+\end{eqnarray*}
+where ${\bf 1}$ is a length $S$ column vector of ones, and ${\bf 0}$ is a length $S$ row vector of zeros.  This change of notation allows us to write system dynamics in terms of familiar Gaussian state and observation processes amenable to processing by the Kalman filter:
+\begin{eqnarray}
+  \boldsymbol{\Theta}_t & = & \mathcal{M}_t \boldsymbol{\Theta}_{t-1} + {\bf E}_t,
+  \label{eq:state-eq}
+\end{eqnarray}
+\begin{eqnarray}
+  {\bf Z}_t & = & {\bf H}_t \boldsymbol{\Theta}_t + \boldsymbol{\varepsilon}_t.
+   \label{eq:obs-eq}
+\end{eqnarray}
+Here, the $S \times (S+1)$ dimensional matrix ${\bf H}_t$ maps $\boldsymbol{\Theta} \rightarrow {\bf Z}$, and $\bf{E}_t = [\boldsymbol{\epsilon}_t \delta_t]$,
+where $\delta_t \sim \textrm{Normal}(0,\tau_\gamma^{-1})$.
+Of course, we do not actually observe ${\bf Z}_t$ either, but can still use the Kalman filtering machinery to provide efficient MCMC updates.  To do so, we write the observation error covariance matrix (i.e., for $\boldsymbol{\varepsilon}_t$) as ${\bf R}_t = \tau_z^{-1} \mathcal{D}(S)$, where $\mathcal{D}(S)$ is an $(S \times S)$ identity matrix, and write the process error covariance matrix (i.e., for $\boldsymbol{\epsilon}_t$) as
+\begin{eqnarray*}
+  \bf{Q}_t = \left[  \begin{array}{cc} \tau_\epsilon^{-1} \mathcal{D}(S) & {\bf 0} \\ {\bf 0} & \tau_\gamma^{-1} \end{array} \right].
+\end{eqnarray*}
+We then use the following steps to update $\boldsymbol{\mu}_t$:
+\begin{enumerate}
+  \item Draw random vectors of the Gaussian disturbances, $\boldsymbol{\epsilon}^+$ and $\boldsymbol{\varepsilon}^+$ (the `+' denoting that these are a simulated draw).
+  \item Initialize the state vector $\boldsymbol{\Theta}_1^+$ using a $\textrm{Normal}({\bf X}_1 \boldsymbol{\beta} + \boldsymbol{\eta}, \tau_\epsilon^{-1})$ distribution for the first $S$ elements, and a $\textrm{Normal}(0,\tau_\gamma^{-1})$ distribution for the $(S+1)th$ element, use the vectors of $\boldsymbol{\epsilon}^+$ and $\boldsymbol{\varepsilon}^+$ together with the state and observation equations (i.e., eqns. \ref{eq:state-eq} \& \ref{eq:obs-eq}) to define simulated state and observation vectors $\boldsymbol{\Theta}^+$ and ${\bf Z}^+$.
+  \item Compute ${\bf Z}_t^* = {\bf Z}_t - {\bf Z}_t^+$, which we run through the Kalman filter using the following
+      forward equations:
+      \begin{eqnarray*}
+        {\bf P}_t & = & \mathcal{M}_t {\bf P}_{t-1} {\bf L}_{t-1}^\prime + {\bf Q} \\
+        {\bf L}_t & = & \mathcal{M}_{t+1} - {\bf G}_{t} {\bf H}_{t} \\
+        {\bf G}_t & = & \mathcal{M}_{t+1} {\bf P}_t {\bf H}_t^\prime {\bf F}^{-1} \\
+        {\bf F}_t & = & {\bf H}_t {\bf P}_t {\bf H}_t^\prime + {\bf R}_t \\
+        \boldsymbol{\nu}_t & = & {\bf Z}_t^* - {\bf H}_t {\bf A}_t \\
+        {\bf A}_t & = & \mathcal{M}_t {\bf A}_{t-1} + {\bf G}_{t-1} \boldsymbol{\nu}_{t-1}.
+      \end{eqnarray*}
+      Here, ${\bf A}_t = {\bf 0}$ indicates that ${\bf A}$ is initialized at $t=1$ to be an all zero vector of length $S+1$.
+  \item Compute vectors of smoothed disturbances at time $t$, ${\bf D}_t$ by setting ${\bf D}_T ={\bf 0}$, and moving backward by backward recursion:
+      \begin{eqnarray*}
+        {\bf D}_{t-1} & = & {\bf H}_t^\prime {\bf F}_t^{-1} \boldsymbol{\nu}_t + {\bf L}_t^\prime {\bf D}_t.
+      \end{eqnarray*}
+  \item Next, we generate smoothed mean residuals for the state vector, $\hat{\boldsymbol{\Theta}}_t^*$ using eqn 8. of \citet{DurbinKoopman2002} as
+      \begin{eqnarray*}
+        \hat{\boldsymbol{\Theta}}_1^* & = &  {\bf A}_1 + {\bf P}_1 ( {\bf H}_1^\prime {\bf F}_1^{-1} \boldsymbol{\nu}_1+{\bf L}_1^\prime {\bf D}_1), \text{ and} \\
+        \hat{\boldsymbol{\Theta}}_{t}^* & = & \mathcal{M}_{t} \hat{\boldsymbol{\Theta}}_{t-1}^* + {\bf Q} {\bf D}_{t-1}  \text{ for } t>1.
+      \end{eqnarray*}
+  \item A sample from the absolute state distribution at each time step is then calculated as $\tilde{\boldsymbol{\Theta}}_t = \hat{\boldsymbol{\Theta}}_{t}^* + \boldsymbol{\Theta}_t^+$.
+\end{enumerate}
+
+
+\underline{3. Updating $\beta_i$}
+
+\hspace{.5in}The full conditional distribution for each regression parameter, $\beta_i$, is given by
+\begin{eqnarray*}
+  [\beta_i | \cdot] \equiv \textrm{Normal}(\beta_i;0,100) \times \textrm{MVN}(\boldsymbol{\mu}_1; {\bf X}_1 \boldsymbol{\beta} + \boldsymbol{\eta},{\bf Q}_1) \times \prod_{t=2}^T \textrm{MVN}(\boldsymbol{\mu}_t; {\bf M}_t \boldsymbol{\mu}_{t-1},{\bf Q}_t),
+\end{eqnarray*}
+where dependence upon $\boldsymbol{\beta}$ occurs both in the initial state distribution and in dictating the elements of $\mathcal{M}$ through the resource selection formulation.  As there is no closed form solution, we
+obtain samples using MH updates.
+
+\underline{4. Updating $\tau_\epsilon$}
+
+The full conditional distribution for the precision of exchangable errors is available in closed form as
+\begin{eqnarray*}
+  [\tau_\epsilon | \cdot] & \equiv & \textrm{Gamma}(0.5n + 1.0,0.5 \boldsymbol{\Delta}^\prime \boldsymbol{\Delta} + 0.01),
+\end{eqnarray*}
+and can be simulated from directly.
+ Here, $\boldsymbol{\Delta}$ is a vector of length $ST$, where the first $S$ elements are residuals associated with the initial state distribution (i.e., $\boldsymbol{\mu}_1 - {\bf X}_1 \boldsymbol{\beta} -  \boldsymbol{\eta}$), and subsequent elements are residuals associated with the resource selection process (i.e., $\boldsymbol{\mu}_t - {\bf M}_t \boldsymbol{\mu}_{t-1} \forall t \ge 2$).
+
+\underline{5. Updating $\boldsymbol{\alpha}$, $\tau_\eta$}
+
+Reduced dimension spatial random effects for the initial state distribution ($\boldsymbol{\alpha}$) and their accompanying precision ($\tau_\eta$) are updated using the same procedure as for the AST model.  In this case, we use all survey units at time $t=1$ to form relevant model matrices.
+
+\underline{6. Updating $\sigma$}
+
+The full conditional distribution for $\sigma$ (the autocorrelation parameter for AR1 temporal random effects) is available in closed form and can be used to simulate values of $\sigma$ directly:
+\begin{eqnarray*}
+  [\sigma | \cdot] & \equiv & \textrm{MVN}( (\boldsymbol{\gamma}_-^\prime \boldsymbol{\gamma}_-)^{-1} \boldsymbol{\gamma}_-^\prime \boldsymbol{\gamma}_+, \tau_\gamma^{-1} (\boldsymbol{\gamma}_-^\prime \boldsymbol{\gamma}_-)^{-1} ),
+\end{eqnarray*}
+where
+\begin{eqnarray*}
+   \boldsymbol{\gamma}_- & = & \{ \gamma_2, \gamma_3, \hdots, \gamma_{t-1} \}^\prime, \text{ and}
+\end{eqnarray*}
+\begin{eqnarray*}
+   \boldsymbol{\gamma}_+ & = & \{ \gamma_3, \gamma_4, \hdots, \gamma_{T} \}^\prime.
+\end{eqnarray*}
+Note that the initial state distribution has $\gamma_1 = 0$, so there are only $T-1$ effective $\gamma$ parameters with which to base $\sigma$ updates. We enforce the constraint that $0 \le \sigma \le 1$ by rejecting any updates of $\sigma$ that occur outside of this range.
+
+\underline{7. Updating $\tau_\gamma$}
+The full conditional distribution for the precision of temporal random effects is available in closed form as
+\begin{eqnarray*}
+  [\tau_\gamma | \cdot] & \equiv & \textrm{Gamma}(0.5 (T-1) + 1.0,0.5 \boldsymbol{\Delta}_\gamma^\prime \boldsymbol{\Delta}_\gamma + 0.01),
+\end{eqnarray*}
+and can be simulated from directly.
+ Here, $\boldsymbol{\Delta}_\gamma$ is a vector of length $T-1$, where the first element is $\gamma_2$, and susequent elements are $\gamma_{t}-\sigma \gamma_{t-1}$.
+
+
+\underline{8.  Updating $\tau_d$}
+
+The parameter $\tau_d$ controls the redistribution kernel, and thus the elements of $\mathcal{M}_t$.  We update
+$\tau_d$ via a MH step, where the full conditional distribution is given by
+\begin{eqnarray*}
+  [\tau_d | \cdot] & \equiv & \textrm{Gamma}(\tau_d;1.0,0.01) \times  \prod_{t=2}^T \textrm{MVN}(\boldsymbol{\mu}_t, \mathcal{M}_t \boldsymbol{\Theta}_t,{\bf Q}_t).
+\end{eqnarray*}
+
+
+
+\section{Closed population ideal free (CPIF) model}
+
+For the closed population ideal free model, we base inference on the joint posterior
+\begin{eqnarray}
+  [N, N_{s,t}, \boldsymbol{\omega},\boldsymbol{\theta} | {\bf C},{\bf o},{\bf p}] & \propto & [{\bf C} | N_{s,t}, {\bf o}, \boldsymbol{\omega}] [\boldsymbol{\omega} | \boldsymbol{\theta},{\bf o}] [N_{s,t}|N,\omega] [N] [\theta].
+  \label{eq:cpif-post}
+\end{eqnarray}
+As stated in the main article, we now model the counts ${\bf C}$ as arising from a binomial (as opposed to a Poisson) sampling process, where
+\begin{eqnarray*}
+  C_{s,t} & \sim & \textrm{Binomial}(N_{s,t}; p_{s,t}),
+\end{eqnarray*}
+where the fraction of sampling unit $s$ surveyed at time $t$ ($p_{s,t}$)is known with certainty.  Abundance in sampling unit $s$ at time $t$, $N_{s,t}$ is modeled using a multinomial distribution, where
+\begin{eqnarray*}
+  N_{s,t} & \sim & \textrm{Multinomial}(N; \boldsymbol{\pi}).
+\end{eqnarray*}
+Multinomial cell probabilities are modeled with a multinomial logit link: namely,
+\begin{eqnarray*}
+  \pi_{i,t} & = & \frac{\exp(\omega_{i,t})}{\sum_s \exp(\omega{s,t})}.
+\end{eqnarray*}
+We express habitat preference values ($\omega_{s,t}$) using a log-linear formulation that includes spatio-temporal autocorrelation
+\begin{eqnarray*}
+  \boldsymbol{\omega_t} & = & {\bf o} + {\bf X}_t \boldsymbol{\beta} + \boldsymbol{\kappa}_t + \boldsymbol{\epsilon_t}.
+\end{eqnarray*}
+We use the same prior distributions for parameters as in previous sections, and use the same formulation for $\boldsymbol{\kappa}$ as for the STPC model.  For absolute abundance, we use the scale prior
+\begin{eqnarray*}
+[N] & \propto & N^{-1}
+\end{eqnarray*}
+as suggested by \citet{Link2013}.
+
+\subsection{Bayesian analysis of the CPIF model}
+
+Our strategy for simulating from eqn. \ref{eq:cpif-post} is to condition on cells where data are observed to estimate the latent parameters $\boldsymbol{\omega}$ and regression parameters, and then to simulate values of $N_{s,t}$ and $N$ using posterior prediction.   To do this, we employ the following collapsed Gibbs sampler:
+
+\underline{1. Updating $\boldsymbol{\omega}$}
+
+We employ a different strategy for updating $\omega_{s,t}$ depending upon whether sample unit $s$ was surveyed at time $t$ or not.  For each time $t$, we block update all surveyed units $\boldsymbol{\omega}_{t}$ with a Langevin-Hastings step \citep[see e.g.,][section 7.1.4]{GivensHoeting2005}.  Letting $\mathcal{S}_t$ denote the set of surveyed sample units at time $t$ (note also that $\boldsymbol{\omega}_t$ has dimension $[\mathcal{S}_t \times 1)$), the full conditional for time $t$ is given as
+\begin{equation*}
+  [\boldsymbol{\omega}_{t} | \cdot] \propto \textrm{Normal}(\boldsymbol{\omega}_t;{\bf o}_t + {\bf X}_{t} \boldsymbol{\beta} + \boldsymbol{\kappa}_{t}, \tau_\epsilon^{-0.5} \mathcal{D}_t) \times \prod_{s \in \mathcal{S}} \xi_{s,t}^{C_{s,t}}.
+\end{equation*}
+Here, $\mathcal{D}_t$ is an $(\mathcal{S}_t \times \mathcal{S}_t)$ identity matrix.  We use $\xi$ in place of $\pi$ since we are conditioning on surveyed cells only, but the calculation is similar:
+\begin{eqnarray*}
+  \xi_{s,t} & = & \frac{ \exp(\omega_{s,t})}{\sum_{s \in \mathcal{S}} \exp(\omega_{s,t})}.
+\end{eqnarray*}
+
+
+\hspace{.5in} For each $(s,t) \in \mathcal{U}$ ($\mathcal{U}$ denoting the set of times and locations when surveying does not occur), we simply simulate
+\begin{eqnarray*}
+  \omega_{s,t} & \sim & \textrm{Normal}(o_{s,t} + {\bf X}_{s,t} \boldsymbol{\beta} + \boldsymbol{\kappa}_{s,t}, \tau_\epsilon^{-1}).
+\end{eqnarray*}
+
+
+\underline{2-4. Updating $\boldsymbol{\beta}$, $\tau_\epsilon$, $\boldsymbol{\alpha}$, and $\tau_\alpha$}
+
+Updates of these parameters are conducted in the same manner as for the STPC model, simply replacing
+$\mu_{s,t}$ with $\omega_{s,t}$.  Recall that $\boldsymbol{\alpha}$ are temporally evolving weights associated
+with each of $m$ knot locations.  Spatio-temporal effects are modeled in the same manner as for the STPC model.
+
+\underline{5. Updating total abundance}
+
+The total count of animals for surveys that occurred at time $t$, $C_t = \sum_{s \in \mathcal{S}} C_{s,t}$,
+is distributed as
+\begin{equation*}
+  C_t \sim \textrm{Binomial}(N,\upsilon_t),
+\end{equation*}
+where
+\begin{equation*}
+  \upsilon_t= \sum_{s \in \mathcal{S}} \pi_{s,t} p_{s,t},
+\end{equation*}
+and where the full set of multinomial cell probabilities $\pi_{s,t}$ is
+\begin{eqnarray*}
+  \pi_{s,t} & = & \frac{ \exp(\omega_{s,t})}{\sum_s \exp(\omega_{s,t})}.
+\end{eqnarray*}
+Using this approach, the full conditional distribution for $N$ is given (up to a proportionality constant) as
+\begin{eqnarray}
+  [N | \cdot] & \propto & N^{-1} \frac{(N!)^T}{\prod_t (N-C_t)!}\prod_t (1-\upsilon_t)^{N-C_t}.
+  \label{eq:N.CPIF}
+\end{eqnarray}
+We used the MH algorithm to sample from eqn. \ref{eq:N.CPIF}.  Posterior predictions of abundance across the landscape could then be generated using
+\begin{eqnarray*}
+  {\bf N}_{t} & \sim & \textrm{Multinomial}(N,\boldsymbol{\pi}_t).
+\end{eqnarray*}
+
+
+
+\renewcommand{\refname}{Literature Cited}
+\bibliographystyle{JEcol}
+
+\bibliography{master_bib}
+
+\end{flushleft}
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

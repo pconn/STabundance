@@ -1,24 +1,10 @@
 # run_BOSS_ST_sims.R
 # script to run generic spatio-temporal count data simulations
-require(rgeos)
-require(sp)
-require(Matrix)
-require(hierarchicalDS)
-require(ggplot2)
-require(plyr)
-require(grid)
+require(STabundance)
 
-#load spatial-temporal covariate & grid data
-source("./STabundance/R/sim_data_Bering.R")
-source("./STabundance/R/sim_funcs.R")
-source("./STabundance/R/util_funcs.R")
-source("./STabundance/R/mcmc_STPC.R")
-source("./STabundance/R/mcmc_CPIF.R")
-source("./STabundance/R/mcmc_AST.R")
-
-load("BOSSst_2012data.Rdata")  #boss grid, ice data
-load("Effort2012_BOSSst.Rdata")  #load effort data indicating grid cells and times surveyed (data produced with format_effort.R)
-load("Knot_cell_distances.Rdata") #load object giving K matrix, Q for knots
+data(BOSSst_2012data.Rdata)  #boss grid, ice data
+data(Effort2012_BOSSst.Rdata)  #load effort data indicating grid cells and times surveyed (data produced with format_effort.R)
+data(Knot_cell_distances.Rdata) #load object giving K matrix, Q for knots
 
 Model.list=c("RS2closed","CPIF")
 set.seed(12345)

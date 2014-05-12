@@ -30,13 +30,7 @@
 #' @import Matrix
 #' @keywords abundance, mcmc, spatio-temporal model, spatial prediction
 #' @author Paul B. Conn \email{paul.conn@@noaa.gov} 
-#' @examples print("Later!")
-
-
 mcmc_AST<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
-  require(Matrix)
-  require(mvtnorm)
-  
   S=nrow(Data$Grid[[1]])
   t.steps=length(Data$Grid)
   n.obs=nrow(Data$Count.data)

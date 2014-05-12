@@ -1,11 +1,14 @@
 % besdoc.tex V1.0, 17 March 2011
 
+%\documentclass[12pt,english]{article}
 \documentclass[times,mee,doublespace,]{besauth2}
 %%\documentclass[times,mee,]{besauth}
 
 \newcommand{\journalnamelc}{British Ecological Society}
 \newcommand{\journalabb}{British Ecological Society}
 \newcommand{\journalclassshort}{BES}
+
+
 %%\newcommand{\journalname}{British Ecological Society}
 \usepackage{epstopdf}
 
@@ -90,22 +93,23 @@ Animal count data are most often obtained on areal sample units (i.e., in discre
 
 All spatio-temporal models that we examine relate observed counts, $C_k$, obtained at a limited number of times and sample units, to a hidden spatio-temporal process $\mu_{s,t}$ that is defined over all sample units and times through a standard probability mass function $f$, link function $g$, covariates ${\bf x}$, and parameters $\boldsymbol{\theta}$ (throughout this article we shall use bold symbols to denote vectors and matrices).  For example, the formulation
 \begin{eqnarray}
-  {\bf C} & \sim & \textrm{Poisson}({\bf \lambda}), \nonumber \\
-  \boldsymbol{\lambda} & = & \exp \left( {\bf o} + {\bf H}\boldsymbol{\mu} \right) \label{eq:basic-mod}
+  {\bf C} & \sim & \textrm{Poisson}(\boldsymbol{\lambda}), \nonumber \\
+  \boldsymbol{\lambda} & = & \exp \left( {\bf o} + {\bf H}\boldsymbol{\mu} \right) 
+  \label{eq:basic-mod}
 \end{eqnarray}
 specifies that counts are Poisson distributed with a log link function on abundance intensity. Following \citet{WikleHooten2010}, we use the matrix ${\bf H}$ to map from the full set of $ST$ values of $\mu_{s,t}$ to the smaller set of $n$ counts. We also include log offsets ${\bf o}$ to allow for differences in the amount of area surveyed (this could also be used to help model detection probability when detectability is less than 1.0; see Discussion).  In practice, more flexible distributional forms could be considered, such as the negative binomial or Conway-Maxwell Poisson \citep{WuEtAl2013}, but our focus here is in describing general forms for the spatio-temporal process $\mu_{s,t}$ and we shall use the Poisson as a convenient form for $f$ throughout the remainder of this article.
 
 Models with the form of eqn \ref{eq:basic-mod} can sometimes be analyzed directly via maximum likelihood, but introducing even moderate complexity in models for $\mu_k$ can make computation intractable.  To preserve flexibility, we prefer to specify prior distributions for model parameters and to conduct Bayesian inference \citep[see e.g.][]{GelmanEtAl2004} on complete data likelihoods \citep{Dempster1977}.   We follow the tradition of \citet{Berliner1996} in expressing the posterior distribution associated with eqn \ref{eq:basic-mod} as consisting of an observation model, a process model, and a set of
 prior distributions.  Letting $[a|b]$ denote the conditional distribution of $a$ given $b$, we write the joint posterior distribution for parameters $\boldsymbol{\theta}$ and latent variables $\boldsymbol{\mu}$ (up to proportionality constant) as
 \begin{eqnarray}
-  [\boldsymbol{\mu},\boldsymbol{\theta} | {\bf x},{\bf C},{\bf o}] & \propto & [{\bf C} | {\bf o}, \boldsymbol{\mu}] [\boldsymbol{\mu} | \boldsymbol{\theta},{\bf x}] [\theta].
+  [\boldsymbol{\mu},\boldsymbol{\theta} | {\bf x},{\bf C},{\bf o}] & \propto & [{\bf C} | {\bf o}, \boldsymbol{\mu}] [\boldsymbol{\mu} | \boldsymbol{\theta},{\bf x}] [\boldsymbol{\theta}].
   \label{eq:hmod}
 \end{eqnarray}
-Here, $[{\bf C} | {\bf o}, \boldsymbol{\mu}]$ simply describes the Poisson observation model (the first line in eqn. \ref{eq:basic-mod}), $[\boldsymbol{\mu} | \boldsymbol{\theta},{\bf x}]$ describes the process model (how latent abundance varies over space and time), and $[\theta]$ describes prior parameters.  Although care must be taken in formulating observation and prior parameter models, we now turn to describing different ways of formulating the spatio-temporal process model before discussing ways of using dimension reduction to decrease computational burden.
+Here, $[{\bf C} | {\bf o}, \boldsymbol{\mu}]$ simply describes the Poisson observation model (the first line in eqn. \ref{eq:basic-mod}), $[\boldsymbol{\mu} | \boldsymbol{\theta},{\bf x}]$ describes the process model (how latent abundance varies over space and time) conditional on parameters $\boldsymbol{\theta}$ and habitat covariates ${\bf x}$, and $[\boldsymbol{\theta}]$ describes the prior distribution on model parameters.  Although care must be taken in formulating observation and prior parameter models, we now turn to describing different ways of formulating the spatio-temporal process model before discussing ways of using dimension reduction to decrease computational burden.
 
 \subsection{Descriptive vs. dynamical formulations}
 
-\citet{CressieWikle2011} classify spatio-temporal models into two types: descriptive and dynamical.  The development of descriptive spatio-temporal models largely follows the development of spatial and time series models, where there is an a priori expectation that system states (in our case, $\mu_{s,t}$) close together in space or time should be similar to one another.  In descriptive models, this expectation is often codified by specifying a covariance function that decreases as a function of distance (where distance can be either in space or time).  For instance, the model
+\citet{CressieWikle2011} classify spatio-temporal models into two types: descriptive and dynamical.  The development of descriptive spatio-temporal models largely follows the development of spatial and time series models, where there is an {\it a priori} expectation that system states (in our case, $\mu_{s,t}$) close together in space or time should be similar to one another.  In descriptive models, this presumption is often codified by specifying a covariance function that decreases as a function of distance (where distance can be either in space or time).  For instance, the model
 \begin{eqnarray}
   \mu_{s,t} = {\bf X}_{s,t} \boldsymbol{\beta} + \eta_s + \gamma_t + \kappa_{s,t} + \epsilon_{s,t} \label{eq:glmm}
 \end{eqnarray}
@@ -114,19 +118,19 @@ Similar approaches can be used to define spatio-temporal covariance functions \c
 
 By contrast, dynamical spatio-temporal models attempt to model the mechanism by which the spatio-temporal process evolves over time.  In spatio-temporal models for physical processes (e.g. atmospheric processes), the evolution of the spatio-temporal process is largely governed by the laws of physics, which can be represented with ordinary or partial differential equations \citep{WikleEtAl2001,WikleHooten2010}.  Discrete time approximations to such equations can provide much more meaningful structure than simple descriptive models, although descriptive model features can still be used to account for residual spatio-temporal autocorrelation.  In ecology, dynamical spatio-temporal models have been used to model invasive species spread \citep{Wikle2003,HootenEtAl2007,HootenWikle2008}.  Even though invasive species do not necessarily subscribe to a single succinct ``law" that governs their spread, physical models for advection-diffusion processes are still incredibly useful for describing and constraining evolution of the spatio-temporal process.
 
-Coming back to the problem of estimating animal abundance, consider a dynamical model for $\mu_{s,t}$ that takes on the form
+Returning to the problem of estimating animal abundance, consider a dynamical model for $\mu_{s,t}$ that takes on the form
 \begin{eqnarray}
-  [\boldsymbol{\mu}|\boldsymbol{\theta}] & = & [\boldsymbol{\mu}_1 | \boldsymbol{\theta}] \prod_{t=2}^T [\boldsymbol{\mu}_t | \boldsymbol{\mu}_{t-1},\boldsymbol{\theta}].
+  [\boldsymbol{\mu}|\boldsymbol{\theta},{\bf x}] & = & [\boldsymbol{\mu}_1 | \boldsymbol{\theta},{\bf x}_1] \prod_{t=2}^T [\boldsymbol{\mu}_t | \boldsymbol{\mu}_{t-1},\boldsymbol{\theta},{\bf x}_t].
   \label{eq:mu}
 \end{eqnarray}
-where subscripts in this case denote time (so that $\boldsymbol{\mu}_t$ describes a collection of $\mu_{s,t}$ values over all spatial locations for a given time $t$).  With this setup, we require a model for the initial spatial distribution of $\mu_{s,t}$ at the beginning of the study (i.e. $[\boldsymbol{\mu}_1 | \boldsymbol{\theta}]$), and
-specify a dynamical, Markovian model for evolution of the process via $[\boldsymbol{\mu}_t | \boldsymbol{\mu}_{t-1},\boldsymbol{\theta}]$.  For instance, we might consider a matrix model - i.e.
+where subscripts in this case denote time (so that $\boldsymbol{\mu}_t$ describes a collection of $\mu_{s,t}$ values over all spatial locations for a given time $t$).  With this setup, we require a model for the initial spatial distribution of $\mu_{s,t}$ at the beginning of the study (i.e. $[\boldsymbol{\mu}_1 | \boldsymbol{\theta},{\bf x}_1]$), and
+specify a dynamical, Markovian model for evolution of the process via $[\boldsymbol{\mu}_t | \boldsymbol{\mu}_{t-1},\boldsymbol{\theta},{\bf x}_t]$.  For instance, we might consider a matrix model - i.e.
 \begin{eqnarray}
-[\boldsymbol{\mu}_t | \boldsymbol{\mu}_{t-1},\boldsymbol{\theta}] & = & {\bf M}_t  \boldsymbol{\mu}_{t-1},
+\boldsymbol{\mu}_t & = & {\bf M}_t \boldsymbol{\mu}_{t-1},
  \label{eq:matrix-mod}
 \end{eqnarray}
-where the matrix $M_t$ is possibly a function of covariates and (unknown) parameter values and describes how animals
-redistribute themselves over the landscape from $t \rightarrow t+1$.  A variety of processes could be used to aid construction of $M_t$, including advection-diffusion \citep{Wikle2003} and agent-based models \citep{HootenWikle2010}.  We could also introduce process error to reduce determinism.  We shall explore a hybrid of these approaches that incorporates resource selection via redistribution kernels in a subsequent section (see {\it Spatio-temporal abundance models}).
+where the matrix ${\bf M}_t$ is possibly a function of covariates at time $t$, ${\bf x}_t$, and (unknown) parameter values $\boldsymbol{\theta}$, and describes how animals
+redistribute themselves over the landscape from $t \rightarrow t+1$.  A variety of processes could be used to aid construction of ${\bf M}_t$, including advection-diffusion \citep{Wikle2003} and agent-based models \citep{HootenWikle2010}.  We could also introduce process error to reduce determinism.  We shall explore a hybrid of these approaches that incorporates resource selection via redistribution kernels in a subsequent section (see {\it Spatio-temporal abundance models}).
 
 In an ecological context, descriptive models applied to abundance estimation essentially reflect ideal free distributions \citep{FretwellLucas1970} whereby animal abundance is free to shift to preferable habitat between time steps, regardless of how far apart such habitat is from animal abundance epicenters in previous time steps.  Although inclusion of spatio-temporal random effects have potential to prevent large shifts in abundance from time step to time step, such artifacts may be expected in desriptive statistical models, especially when survey data are sparse.  By contrast, dynamical models have the capacity to constrain shifts in abundance from time step to time step.
 
@@ -138,9 +142,9 @@ hierarchical models via Markov chain Monte Carlo (MCMC), which often require hun
 
 A common approach to this predicament in high-dimension spatial and spatio-temporal models is to employ some sort of dimension reduction strategy. Two popular avenues for dimension reduction are spectral decomposition \citep[also called empirical orthogonal function analysis in geostatistical parlance;][]{Preisendorfer1988} and process convolution \citep[e.g.][]{Higdon1998}. Spectral decomposition involves taking the eigendecomposition of covariance matrices, and only using eigenvectors that represent dominant spatial structure during statistical analysis.  This is equivalent to principal components analysis in the case of spatio-temporal models in discrete space and time \citep{CressieWikle2011}.
 
-Process convolution, on the other hand, can be implemented by distributing $m$ ``knots" throughout space and/or time, and specifying a full dimensional spatio-temporal model over the knots.  Spatio- or spatio-temporal random effects in locations where there are no knots can then be obtained as a weighted average of values at each of the knots, with the weight depending on the distance (in terms of time, space, or both) of the location of interest to each of the knots.  The actual weight for each location is determined by convolving a kernel (e.g., multivariate Gaussian) with the set of knots.  Predictive process modelling \citep{BanerjeeEtAl2008} as used in species distribution models \citep[e.g.][]{LatimerEtAl2009} is a variant on this approach.
+Process convolution, on the other hand, can be implemented by distributing $m$ ``knots" throughout space and/or time, and specifying a full dimensional spatio-temporal model over the knots.  Spatio- or spatio-temporal random effects in locations where there are no knots can then be obtained as a weighted average of values at each of the knots, with the weight depending on the distance (in terms of time, space, or both) of the location of interest to each of the knots.  The actual weight for each location is determined by convolving a kernel (e.g., multivariate Gaussian) with the set of knots.  Predictive process modelling \citep{BanerjeeEtAl2008} as used in species distribution models \citep[e.g.][]{LatimerEtAl2009} is related to this approach, instead specifying a covariance function among the knots (by contrast, in process convolution the covariance function is induced).
 
-For both approaches (spectral decomposition and process convolution), dimension reduction includes a reduction in  the number of effective random effect parameters as well as the size of associated covariance matrices that need to be inverted during estimation.  For instance, the spatial random effects $\eta_s$ from eqn \ref{eq:glmm} can be represented as
+For both approaches considered here (spectral decomposition and process convolution), dimension reduction includes a reduction in the number of effective random effect parameters as well as the size of associated covariance matrices that need to be inverted during estimation.  For instance, the spatial random effects $\eta_s$ from eqn \ref{eq:glmm} can be represented as
 \begin{eqnarray}
    \boldsymbol{\eta} & = & {\bf K} \boldsymbol{\alpha},
  \label{eq:reduced-spat}
@@ -155,7 +159,7 @@ Estimation of animal abundance introduces a number of nuances and important cons
 
 When a mechanistic (dynamic) model is used to help guide the evolution of the spatio-temporal process, one must pay attention to the boundary conditions necessary to fully specify the solution to systems of partial differential equations \citep[see e.g.][]{Haberman1998}.  With respect to animal abundance, boundary conditions specify how animals immigrate and emigrate across the edges of the study area.  For instance, the dynamic matrix model formulation in eqn. \ref{eq:matrix-mod} could be expanded to include separate consideration of movement within the study area and movement across boundaries:
 \begin{eqnarray*}
-[\boldsymbol{\mu}_t | \boldsymbol{\mu}_{t-1},\boldsymbol{\theta}] & = & {\bf M}_t  \boldsymbol{\mu}_{t-1} + {\bf M}_t^{(b)} \boldsymbol{\mu}_{t-1}^{(b)},
+\boldsymbol{\mu}_t & = & {\bf M}_t  \boldsymbol{\mu}_{t-1} + {\bf M}_t^{(b)} \boldsymbol{\mu}_{t-1}^{(b)},
 \end{eqnarray*}
 where the superscript $(b)$ denotes cells along the boundary of the study area \citep[][Section 6.3.2]{CressieWikle2011}.   Although it is possible to model discretized fluxes across boundaries in hierarchical models \citep[see e.g.][]{WikleEtAl2003b}, the sparse nature of many animal transect count studies may make this task difficult.  In the following treatment, we set immigration and emigration from the study area to zero, an assumption that clearly will need revisiting in other applications (e.g. when estimating abundance of migrating animals).  
 
@@ -221,7 +225,7 @@ Practically, the $\boldsymbol{\varphi}_a$ comprise a redistribution kernel in ab
 \begin{eqnarray}
   \varphi_{a,b} & \propto & \text{Normal}(d(a,b),\sigma_d^2), \label{eq:varphi}
 \end{eqnarray}
-where $d(a,b)$ specifies the Euclidean distance from sample unit $a$ to $b$.  For all examples in this paper, we used the following steps to calculate $\varphi$:
+where $d(a,b)$ specifies the Euclidean distance from sample unit $a$ to $b$. For all examples in this paper, we used the following steps to calculate $\varphi$:
 \begin{enumerate}
   \item Set $\varphi_{ab}=0$ for all sample units $b$ that do not intersect with a circle that has a radius of three sample units symmetric about the centroid of sample unit $a$ (see Fig. \ref{fig:res-sel})
   \item For remaining cells, calculate $\varphi_{ab}$ as in eqn \ref{eq:varphi}, using centroids of cells $a$ and $b$ to calculate $d(a,b)$.
@@ -238,7 +242,8 @@ Specifying a model for $\psi^{ab}_t$ gives us a means to apply resource selectio
 \begin{eqnarray*}
   \boldsymbol{\mu}_t & = & {\bf M}_t \boldsymbol{\mu}_{t-1} + \gamma_t + \boldsymbol{\epsilon}_t, %\label{eq:log-mu}
 \end{eqnarray*}
-a specification we will refer to as OPRS (corresponding to open population resource selection). Since $\mu_{s,t}$ is modeled in log space (see e.g. eqn \ref{eq:basic-mod}), the OPRS specification means that transitions are specified relative to the natural logarithm of abundance intensity. We attempt to compensate for the artifactual effects of range contraction and expansion on OPRS modeled abundance by including a time-specific random effect, $\gamma_t$, which we model using an AR(1) formulation.  In theory, it would be possible to also consider a closed population analogue of this model where transitions are modeled on the real (as opposed to the log) scale, but it would be difficult to include Gaussian error in this case sense abundance intensity must be strictly positive.  We leave development of such a model to future investigation.
+a specification we will refer to as OPRS (corresponding to open population resource selection). Note that for the OPRS model, the elements of the transition matrix ${\bf M}_t$ are simply composed of the transition probabilities $\psi_t^{ab}$.  As with the previous two models, we still use the specification in eqn \ref{eq:basic-mod} to relate $\boldsymbol{\mu}_t$ to observed counts.  
+Since $\mu_{s,t}$ is modeled in log space, the OPRS specification means that transitions are specified relative to the natural logarithm of abundance intensity. We attempt to compensate for the artifactual effects of range contraction and expansion on OPRS modeled abundance by including a time-specific random effect, $\gamma_t$, which we model using an AR(1) formulation.  In theory, it would be possible to also consider a closed population analogue of this model where transitions are modeled on the real (as opposed to the log) scale, but it would be difficult to include Gaussian error in this case because abundance intensity must be strictly positive.  We leave development of such a model to future investigation.
 
 
 \subsection{A closed population ideal free (CPIF) model}
@@ -246,17 +251,17 @@ a specification we will refer to as OPRS (corresponding to open population resou
 The OPRS implementation provides a possible approach for implementing a pseudo-closure assumption, but may be too limiting when animal dispersal is either leptokurtic or ``fast" in relation to the time step of the model.  As another approach for constraining expected abundance to be constant over time, we consider a closed population
 ideal free model where abundance is reallocated to sample units at each time step proportionally to habitat suitability.  In this case, we depart from the general formulation of eqn \ref{eq:hmod} followed up to this point.  Instead, we consider the model
 \begin{eqnarray}
-  [N, N_{s,t}, \boldsymbol{\omega},\boldsymbol{\theta} | {\bf x},{\bf C},{\bf o},{\bf p}] & \propto & [{\bf C} | N_{s,t}, {\bf o}, \boldsymbol{\omega}] [\boldsymbol{\omega} | \boldsymbol{\theta},{\bf x},{\bf o}] [N_{s,t}|N,\omega] [\theta].
+  [N, N_{s,t}, \boldsymbol{\omega},\boldsymbol{\theta} | {\bf C},{\bf o},{\bf p}] & \propto & [{\bf C} | N_{s,t}, {\bf o}, \boldsymbol{\omega}] [\boldsymbol{\omega} | \boldsymbol{\theta},{\bf o}] [N_{s,t}|N,\omega] [\theta].
   \label{eq:cpif-post}
 \end{eqnarray}
 In particular, we model the counts ${\bf C}$ as arising from a binomial sampling process, where
 \begin{eqnarray*}
-  C_{s,t} & \sim & \textrm{binomial}(N_{s,t}; p_{st}),
+  C_{s,t} & \sim & \textrm{binomial}(N_{s,t}, p_{st}),
 \end{eqnarray*}
 where $p_{st}$ is the fraction of the sampling unit $s$ that is surveyed at time $t$ and is assumed known (see Discussion for possible adaptations to modify $p_{st}$ for incomplete detection).
 We model abundance in each sampling unit $s$ at time $t$, $N_{s,t}$ as
 \begin{eqnarray*}
-  N_{s,t} & \sim & \textrm{multinomial}(N; \boldsymbol{\pi}),
+  N_{s,t} & \sim & \textrm{multinomial}(N, \boldsymbol{\pi}),
 \end{eqnarray*}
 where
 \begin{eqnarray*}
@@ -271,7 +276,7 @@ As in the spatio-temporal process convolution model, we include temporally-evolv
 
 \section{Computing}
 
-We developed custom built MCMC samplers in the R programming environment \citep{RTeam2012} to compute posterior summaries for the previously described models.  Mathematical details of these samplers, including full conditional distributions and prior distribution specifications, are provided in Appendix S1.  We developed an R package, \texttt{STabundance}, which includes all functions, scripts, and datasets to recreate subsequent analyses.  This package is available as an online supplement, and from \url{https://github.com/NMML}.
+We developed custom built MCMC samplers in the R programming environment \citep{RTeam2013} to compute posterior summaries for the previously described models.  Mathematical details of these samplers, including full conditional distributions and prior distribution specifications, are provided in Appendix S1.  We developed an R package, \texttt{STabundance}, which includes all functions, scripts, and datasets to recreate subsequent analyses.  This package is available as an online supplement, and from \url{https://github.com/NMML}.
 
 \section{Generic simulation study}
 
@@ -314,7 +319,7 @@ we used numerical optimization to solve for the $\bar{N}$ that minimizes
 \begin{eqnarray*}
   E \left[ \sum_t (\hat{N}_t^{(m)} - \bar{N})^2 | \text{Data} \right],
 \end{eqnarray*}
-where $\hat{N}_t^{(m)}$ is a posterior realization of abundance at time $t$ (e.g. at the $m$th iteration of the Markov chain).  This approach seeks to minimize Bayes risk.  For further information on estimator performance calculations, see Appendix S2.
+where $\hat{N}_t^{(m)}$ is a posterior realization of abundance at time $t$ (e.g. at the $m$th iteration of the Markov chain).  This approach seeks to minimize Bayes risk with a squared error loss function.  For further information on estimator performance calculations, see Appendix S2.
 
 \subsection{Generic simulation results}
 
@@ -347,9 +352,9 @@ Compared to the AST and STPC models, the CPIF structure was much more stable, pr
 
 In this paper, we examined the performance of several classes of spatio-temporal statistical models when applied to the specific purpose of estimating animal abundance.  Models varied by the underlying structures allowing spatio-temporal variation (i.e., descriptive vs. dynamical), whether populations were assumed open or closed to demographic change, and whether models included spatio-temporal interactions.  Several of the models we developed were quite novel; for instance, to our knowledge this is the first application where a resource selection model has been embedded into a spatio-temporal statistical model for count data \citep[although see][for an example integrating resource selection into capture-recapture models]{RoyleEtAl2013}.  In the real world, selection of an appropriate statistical model should be guided by a number of factors, including the study population, the length of the study, and sampling intensity.  Selection of an appropriate model should also depend on the performance and robustness of available spatio-temporal models, as inferred from simulation studies and exhibited through case studies.
 
-Results of our ``generic" simulations indicated that spatio-temporal estimation models were capable of producing posterior distributions of animal abundance that were unbiased and highly precise over two different levels of sampling effort and three different data generating models.  These are extremely desirable qualities in an estimation procedure for animal abundance. Unfortunately, credible interval coverage was frequently too narrow (particularly for the CPIF and STPC estimation models), especially when the estimation and data generating models differed considerably.  This is perhaps not surprising, as our estimates are conditional on the assumed models.  However, it suggests the need to be careful in taking statements about precision at face value as model-conditioned standard errors will almost certainly be too small to represent the complex ``real-world" laws governing the distribution and abundance of animal abundance.  Two solutions to this predicament may be worth considering.  First, one could conduct simulation exercises designed to mimic the real world system as closely as possible in order to generate an ad hoc variance inflation factor.  Second, one could conduct multi-model inference \citep[e.g. using Bayesian model averaging;][]{HoetingEtAl1999} to potentially remove some of the most problematic aspects of conditioning on a single model.
+Results of our ``generic" simulations indicated that spatio-temporal estimation models were capable of producing posterior distributions of animal abundance that were unbiased and highly precise over two different levels of sampling effort and three different data generating models.  These are extremely desirable qualities in an estimation procedure for animal abundance. Unfortunately, credible interval coverage was frequently too narrow (particularly for the CPIF and STPC estimation models), especially when the estimation and data generating models differed considerably.  This is perhaps not surprising, as our estimates are conditional on the assumed models.  However, it suggests the need to be careful in taking statements about precision at face value as model-conditioned standard errors will almost certainly be too small to represent the complex ``real-world" laws governing the distribution and abundance of animal abundance.  Two solutions to this predicament may be worth considering.  First, one could conduct simulation exercises designed to mimic the real world system as closely as possible in order to generate an {\it ad hoc} variance inflation factor.  Second, one could conduct multi-model inference \citep[e.g. using Bayesian model averaging;][]{HoetingEtAl1999} to potentially remove some of the most problematic aspects of conditioning on a single model.
 
-Simulations revealed a large amount of variation in requisite computing times for spatio-temporal statistical models (Appendix S2), with the AST model (including descriptive, additive spatio-temporal variation) being much faster than other approaches.  The two models allowing spatio-temporal interactions via dynamical process convolution (STPC and CPIF) were somewhat slower, but still allowed us to obtain sufficient MCMC realizations in a reasonable amount of time.  The resource selection model (OPRS), however, took substantially longer, even after expending considerable effort to improve computational speed via a disturbance implementation of the Kalman filter \citep[][; see Appendix S2]{DurbinKoopman2002}.  This is likely because the OPRS model requires that one update latent abundance for each sample unit and time step (dimension $ST$) at every MCMC iteration.  By contrast, the AST, STPC, and CPIF specifications often only require updates be made at time and locations where sampling occurs; abundance at unobserved locations can be generated via posterior prediction (see Appendix S2).  As such, the computational demands required to integrate resource selection into spatio-temporal abundance models may be too onerous for many real world applications (at least at the time of this writing).
+Simulations revealed a large amount of variation in requisite computing times for spatio-temporal statistical models (Appendix S2), with the AST model (including descriptive, additive spatio-temporal variation) being much faster than other approaches.  The two models allowing spatio-temporal interactions via dynamical process convolution (STPC and CPIF) were somewhat slower, but still allowed us to obtain sufficient MCMC realizations in a reasonable amount of time.  The resource selection model (OPRS), however, took substantially longer, even after expending considerable effort to improve computational speed via a disturbance implementation of the Kalman filter \citep[][see Appendix S2]{DurbinKoopman2002}.  This is likely because the OPRS model requires that one update latent abundance for each sample unit and time step (dimension $ST$) at every MCMC iteration.  By contrast, the AST, STPC, and CPIF specifications often only require updates be made at time and locations where sampling occurs; abundance at unobserved locations can be generated via posterior prediction (see Appendix S2).  As such, the computational demands required to integrate resource selection into spatio-temporal abundance models may be too onerous for many real world applications (at least at the time of this writing).
 
 Simulations specifically tailored to spotted seal counts in the eastern Bering Sea indicated reasonable performance of STPC and CPIF model structures, albeit with a small positive bias.  However, the AST formulation often led to a spurious trend in abundance, and estimates that were too large.  Estimates from the AST model were much better when confined to April 27, 2012, the day when a transect was flown over the apparent epicenter of spotted seal range.  However, fitting these same models to real spotted seal data provided mixed results.  The CPIF model produced reasonable model results with estimates that by and large met our a priori expectations (e.g. with spotted seal concentrations along the southern ice edge that gradually contracted and moved northwards as ice melted).  On the other hand, the AST and STPC formulations, both of which rely on a log-Gaussian Cox process, resulted in extremely right skewed posterior abundance predictions, to the point where AST results were nonsensical.  Our experience \citep[see e.g.][]{VerHoefJansen2007,ConnEtAl2014} is that lack of fit in count data, coupled with sparse sampling, can often cause positive bias in abundance when using log-Gaussian Cox formulations.  In effect, lack of fit will tend to result in increased variance on the log of abundance intensity, which translates into positive bias since abundance effects are modeled in log space.  It might be possible to decrease lack of fit by employing additional modeling constructs above and beyond the Poisson distribution, such as zero inflation \citep{AgarwalEtAl2002,VerHoefJansen2007} or negative binomial models.  However, spotted seal data are already sparse, and inclusion of additional structures would require an even greater number of parameters to be estimated. Another possible solution, as suggested by Ver Hoef and Jansen (2007), is to generate a point estimate that minimizes a linex loss function \citep{Varian1975}.  However, this puts the analyst in the unenviable position of having a point estimate that is potentially on the far left side of the posterior distribution.  By contrast, going with a model such as CPIF presents no such complications.
 

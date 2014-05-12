@@ -1,4 +1,4 @@
-# function to simulate spatio-temporal latent abundance process given an RS2closed formulation
+#' function to simulate spatio-temporal latent abundance process given an RS2closed formulation
 #' @param S Number of cells (must be a square number)
 #' @param Data A list including at least the following
 #'    Grid - A vectored list where each element holds a time-specific SpatialPolygonsDataFrame full of habitat covariates for the area being modeled   
@@ -22,8 +22,6 @@
 #' @keywords spatio-temporal, simulation
 #' @author Paul B. Conn
 sim_RS2<-function(S,Data,Sim.pars,hab.formula,Area.adjust=NULL){
-  require(rgeos)
-  require(Matrix)
   DEBUG=FALSE
   if(DEBUG){
     tau.epsilon=100000
@@ -65,7 +63,7 @@ sim_RS2<-function(S,Data,Sim.pars,hab.formula,Area.adjust=NULL){
 
 
 
-# function to simulate latent abundance with a closed pop ideal free superpopulation model
+#' function to simulate latent abundance with a closed pop ideal free superpopulation model
 #' @param S Number of cells (must be a square number)
 #' @param Data A list including at least the following
 #'    Grid - A vectored list where each element holds a time-specific SpatialPolygonsDataFrame full of habitat covariates for the area being modeled   
@@ -114,11 +112,9 @@ sim_CPIF<-function(S,Data,Sim.pars,hab.formula,Q.knot,K.cpif,Area.adjust=NULL){
   } 
   Lambda
 }
-#plot_N_map(1,as.matrix(Data$Grid[[30]]@data[,1],ncol=1),Grid=Data$Grid,leg.title="Covariate")
-#plot_N_map(1,as.matrix(Lambda[,30],ncol=1),Grid=Data$Grid,highlight=c(1,2),cell.width=1,leg.title="Covariate")
 
 
-# function to simulate effort data 
+#' function to simulate effort data 
 #' @param S Number of cells (must be a square number)
 #' @param Data A list including at least the following
 #'    Grid - A vectored list where each element holds a time-specific SpatialPolygonsDataFrame full of habitat covariates for the area being modeled   
@@ -143,7 +139,7 @@ sim_effort<-function(S,Data,n.transects=NULL,line.width){
   Effort
 }
   
-# function to simulate transect counts given an effort dataset and spatio-temporal lambda values
+#' function to simulate transect counts given an effort dataset and spatio-temporal lambda values
 #' @param S Number of cells (must be a square number)
 #' @param Data A list including at least the following
 #'    Grid - A vectored list where each element holds a time-specific SpatialPolygonsDataFrame full of habitat covariates for the area being modeled   

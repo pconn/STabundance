@@ -32,13 +32,7 @@
 #' @import Matrix
 #' @keywords abundance, mcmc, spatio-temporal model, spatial prediction
 #' @author Paul B. Conn \email{paul.conn@@noaa.gov} 
-#' @examples print("Later!")
-
-
 mcmc_OPRS<-function(Predictors=NULL,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
-  require(Matrix)
-  require(mvtnorm)
-  
   DEBUG=FALSE
   S=nrow(Data$Grid[[1]])
   t.steps=length(Data$Grid)
@@ -236,7 +230,7 @@ mcmc_OPRS<-function(Predictors=NULL,Data,Prior.pars=NULL,Control,Area.adjust=NUL
   
   if(DEBUG){
     for(it in 1:t.steps){
-      Z.list[[it]]=log(Sim.data$N[,it]+0.01)
+      Z.list[[it]]=log(Data$N[,it]+0.01)
       Mu.list[[it]]=Z.list[[it]]
     }
     Z=unlist(Z)

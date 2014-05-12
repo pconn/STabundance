@@ -1,4 +1,4 @@
-#' function to perform Bayesian analysis of count data using a separable spatio-temporal log Gaussian Cox process model
+#' function to perform Bayesian analysis of count data using spatio-temporal interactive log Gaussian Cox process model using dynamic process convolution
 #' @param model A formula object specifying the linear predictor for abundance intensity
 #' @param Data   A list holding the following objects:
 #'        Adj - Adjacency matrix of ones and zeros describing spatial connectivity (for ICAR modeling)
@@ -34,12 +34,7 @@
 #' @import Matrix
 #' @keywords abundance, mcmc, spatio-temporal model, spatial prediction
 #' @author Paul B. Conn \email{paul.conn@@noaa.gov} 
-#' @examples print("Later!")
-
-
 mcmc_STPC<-function(model,Data,Prior.pars=NULL,Control,Area.adjust=NULL){
-  require(Matrix)
-  require(mvtnorm)
   
   S=nrow(Data$Grid[[1]])
   t.steps=length(Data$Grid)

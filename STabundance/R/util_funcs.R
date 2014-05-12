@@ -1,35 +1,3 @@
-
-#' function to calculate posterior predictive loss given the output object from ST analysis
-#' @param Out Output object from running spatio-temporal estimation routine
-#' @param burnin Any additional #'s of values from beginning of chain to discard before calculating PPL statistic (default is 0)
-#' @return A matrix with posterior variance (P), sums of squares (G) for the posterior mean and median predictions (compared to Observations), and total posterior loss (D)
-#' @export
-#' @keywords Posterior predictive loss
-#' @author Paul B. Conn
-post_loss_boss<-function(Out,burnin=0){
-  dims.Pred=dim(Out$Pred.det)
-  median.Pred=array(0,dim=dims.Pred[2:3])
-  mean.Pred=median.Pred
-  var.Pred=mean.Pred
-  for(itrans in 1:dims.Pred[2]){
-    for(iobs in 1:dims.Pred[3]){
-        median.Pred[itrans,iobs]=median(Out$Pred.det[(burnin+1):dims.Pred[1],itrans,iobs])
-        mean.Pred[itrans,iobs]=mean(Out$Pred.det[(burnin+1):dims.Pred[1],itrans,iobs])
-        var.Pred[itrans,iobs]=var(Out$Pred.det[(burnin+1):dims.Pred[1],itrans,iobs])
-    }  
-  }
-  sum.sq.mean=sum((Out$Obs.det-mean.Pred)^2)
-  sum.sq.median=sum((Out$Obs.det-median.Pred)^2)
-  Loss=matrix(0,2,3)
-  colnames(Loss)=c("P","G","D")
-  rownames(Loss)=c("mean","median")
-  Loss[,1]=sum(var.Pred)
-  Loss[1,2]=sum.sq.mean
-  Loss[2,2]=sum.sq.median
-  Loss[,3]=rowSums(Loss[1:2,1:2])
-  Loss
-}
-
 #' Produce an RW2 structure matrix for a line (e.g. for time series)
 #' @param x length of vector
 #' @return RW2 precision matrix
@@ -37,7 +5,6 @@ post_loss_boss<-function(Out,burnin=0){
 #' @keywords adjacency
 #' @author Paul Conn
 linear_adj_RW2 <- function(x){
-  require(Matrix)
   Q=Matrix(0,x,x)
   for(i in 1:(x-2)){
     Q[i,i+2]=1
@@ -144,7 +111,7 @@ d_biv_normal<-function(Tmp.vec,XY,Sigma){
   return(dnorm(XY[1,],0,Sigma[1])*dnorm(XY[2,],0,Sigma[2]))
 }
   
-#' Function to plot abundance map for BOSS survey grid
+#' Function to plot abundance map for Bering Sea survey grid
 #' @param cur.t  Time step to plot map for
 #' @param N A matrix holding abundance point estimates; different rows correspond to different sampling units, columns correspond to time step
 #' @param Grid A list object, each element of which holds a spatial polygons data frame for each time step
@@ -156,8 +123,6 @@ d_biv_normal<-function(Tmp.vec,XY,Sigma){
 #' @keywords abundance map, plot
 #' @author Paul Conn \email{paul.conn@@noaa.gov}
 plot_N_map<-function(cur.t,N,Grid,highlight=NULL,cell.width=1,leg.title="Abundance"){
-  require(rgeos)
-  require(ggplot2)
   Tmp=Grid[[1]]
   if(is.null(highlight)==FALSE){
     midpoints=data.frame(gCentroid(Tmp[highlight,],byid=TRUE))

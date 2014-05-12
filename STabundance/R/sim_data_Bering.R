@@ -1,22 +1,19 @@
-### sim_data_Bering.R
-### function to simulate data for spatio-temporal abundance analysis from BOSS ice data
-### in Bering Sea
-
+#' function to simulate Bering Sea spotted seal data for spatio-temporal abundance analysis 
+#' @param sim.type A character string specifying the type of model used for space-time abundance dynamics 
+#'        ("RS2closed" - resource selection on absolute abundance intensity on a closed population; "CPIF" closed population ideal free;
+#'        ("RS2open" - open population with restricted dis))
+#' @return A list object composed of at least two objects, "Data$Grid" is a list vector holding covariate data by day,
+#'         and "Count.data" which holds simulated transect counts 
+#' @export
+#' @keywords spatio-temporal, simulation, spotted seals
+#' @author Paul B. Conn
 sim_data_Bering<-function(sim.type){
-  require(sp)
-  require(rgeos)
-  require(Matrix)
-  require(hierarchicalDS)
-  require(ggplot2)
-  require(plyr)
-  require(grid)
-  source('c:/users/paul.conn/git/STabundance/STabundance/R/util_funcs.R')
-  source('c:/users/paul.conn/git/STabundance/STabundance/R/sim_funcs.R')
+  #source('c:/users/paul.conn/git/STabundance/STabundance/R/util_funcs.R')
+  #source('c:/users/paul.conn/git/STabundance/STabundance/R/sim_funcs.R')
   
-  #source('c:/users/paul.conn/git/STabundance/STabundance/R/spat_funcs.R')
   
   #load spatial-temporal covariate & grid data
-  load("BOSSst_2012data.Rdata")  #boss grid, ice data
+  data("BOSSst_2012data")  #boss grid, ice data
   #limit to April 10 - May 8
   t.steps=29 
   Old.Grid=Data$Grid
@@ -24,8 +21,8 @@ sim_data_Bering<-function(sim.type){
   for(it in 1:t.steps)Data$Grid[[it]]=Old.Grid[[it+3]]
   rm(Old.Grid)
   
-  load("Effort2012_BOSSst.Rdata")  #load effort data indicating grid cells and times surveyed (data produced with format_effort.R)
-  load("Knot_cell_distances.Rdata")
+  data(Effort2012_BOSSst)  #load effort data indicating grid cells and times surveyed (data produced with format_effort.R)
+  data(Knot_cell_distances)
   
   Data$Effort=data.frame(matrix(0,nrow(Effort$Mapping),1))
   Data$Effort$Cell=Effort$Mapping[,1]
@@ -60,15 +57,4 @@ sim_data_Bering<-function(sim.type){
   #plot_N_map(1,matrix(Sim.data$N[,30],ncol=1),Grid=Data$Grid)
   return(Sim.data)
 }
-
-
-
-
-#final data format:
-#Dat - same as previous
-#  col 1- transect ID (now, separate for each cell/day combo)
-#      2- photo obtained (0/1) ? 
-#' 		 3- Observation type (integer - the max integer being 'unknown' if applicable) [NOTE: modeled as factor, but need to be input as integers to account for unknown species observations]
-#' 		 x- Group size
-
 

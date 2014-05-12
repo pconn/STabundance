@@ -1,4 +1,4 @@
-# function to simulate spatio-temporal count data over generic simulated landscapes
+#' function to simulate spatio-temporal count data over generic simulated landscapes
 #' @param sim.type A character string specifying the type of model used for space-time abundance dynamics 
 #'        ("RS2closed" - resource selection on absolute abundance intensity on a closed population; "CPIF" closed population ideal free;
 #'        ("RS2open" - open population with restricted dis))
@@ -7,25 +7,15 @@
 #' @param n.transects Number of transects to simulate at each time step
 #' @param line.width Proportional of a cell's diameter that is covered by a transect when it surveys a cell
 #' @param delta Expected proportion increase/decrease for habitat covariate at each time step
-#' @param burnin Any additional #'s of values from beginning of chain to discard before calculating PPL statistic (default is 0)
-#' @return A matrix with posterior variance (P), sums of squares (G) for the posterior mean and median predictions (compared to Observations), and total posterior loss (D)
+#' @return A list object composed of at least two objects, "Data$Grid" is a list vector holding covariate data by day,
+#'         and "Count.data" which holds simulated transect counts 
 #' @export
 #' @keywords spatio-temporal, simulation
 #' @author Paul B. Conn
 sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width,delta=0){
-  require(sp)
-  require(rgeos)
-  require(Matrix)
-  require(hierarchicalDS)
-  require(ggplot2)
-  require(plyr)
-  require(grid)
-  require(spatstat)
-  require(animation)
-  source('./STabundance/R/util_funcs.R')
-  source('./STabundance/R/sim_funcs.R')
+  #source('./STabundance/R/util_funcs.R')
+  #source('./STabundance/R/sim_funcs.R')
   
-  #source('c:/users/paul.conn/git/BOSSst/BOSSst/R/spat_funcs.R')
   if(sqrt(S)%%1>0)cat("error in sim_data_generic; S must be a square number \n")
   if(!(sim.type %in% c("RS2closed","RS2open","CPIF")))cat("error in sim_data_generic; sim.type not recognized")
   
@@ -123,18 +113,9 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
   #plot(Data$Grid[[1]],xlab="Easting",ylab="Northing",col='gray')
   #points(Knot.centers,col="blue",pch=20)
   #dev.off()
-  
-  #crap=plot_N_map(1,as.matrix(Data$Grid[[1]]@data[,1],ncol=1),Grid=Data$Grid,leg.title="Covariate")+theme(text=element_text(size=16))
-  #crap+geom_points
+
   #plot_N_map(1,as.matrix(Data$Grid[[2]]@data[,1],ncol=1),Grid=Data$Grid,leg.title="Covariate")
-  #plot_N_map(1,as.matrix(Data$Grid[[5]]@data[,1],ncol=1),Grid=Data$Grid,leg.title="Covariate")
-  #plot_N_map(1,as.matrix(Data$Grid[[10]]@data[,1],ncol=1),Grid=Data$Grid,leg.title="Covariate")
-  #plot_N_map(1,as.matrix(Data$Grid[[15]]@data[,1],ncol=1),Grid=Data$Grid,leg.title="Covariate")  
-  #plot_N_map(1,as.matrix(Data$Grid[[20]]@data[,1],ncol=1),Grid=Data$Grid,leg.title="Covariate")
-  #plot_N_map(1,as.matrix(Data$Grid[[25]]@data[,1],ncol=1),Grid=Data$Grid,leg.title="Covariate")  
-  #plot_N_map(1,as.matrix(Data$Grid[[30]]@data[,1],ncol=1),Grid=Data$Grid,leg.title="Covariate")
-  
-  
+
   
   #Go ahead and switch to S by S for RS2closed, CPIF
   Cur.S=S2
@@ -187,40 +168,5 @@ sim_data_generic<-function(sim.type="RS2closed",S,t.steps,n.transects,line.width
   Data$Count.data=Sim.data$Count.data
   Sim.data$Data=Data
       
-
-  #function for plotting abundance map
-  i.plot=FALSE
-  if(i.plot){
-    plot_N_map(1,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(2,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(3,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(4,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(5,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(6,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(7,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(8,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(9,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(10,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(11,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(12,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(13,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(14,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(15,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(16,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(17,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(18,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(19,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(20,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(21,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(22,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(23,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(24,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(25,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(26,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(27,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(28,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(29,Sim.data$N,Grid=Data$Grid)
-    plot_N_map(30,Sim.data$N,Grid=Data$Grid)
-  }
   return(Sim.data)
 }
