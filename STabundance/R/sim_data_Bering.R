@@ -5,15 +5,15 @@
 #' @return A list object composed of at least two objects, "Data$Grid" is a list vector holding covariate data by day,
 #'         and "Count.data" which holds simulated transect counts 
 #' @export
+#' @import Matrix
 #' @keywords spatio-temporal, simulation, spotted seals
 #' @author Paul B. Conn
 sim_data_Bering<-function(sim.type){
   #source('c:/users/paul.conn/git/STabundance/STabundance/R/util_funcs.R')
   #source('c:/users/paul.conn/git/STabundance/STabundance/R/sim_funcs.R')
   
-  
   #load spatial-temporal covariate & grid data
-  data("BOSSst_2012data")  #boss grid, ice data
+  data(AlaskaBeringData2012_17April2014)  #boss grid, ice data
   #limit to April 10 - May 8
   t.steps=29 
   Old.Grid=Data$Grid

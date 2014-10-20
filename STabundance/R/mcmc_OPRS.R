@@ -227,6 +227,7 @@ mcmc_OPRS<-function(Predictors=NULL,Data,Prior.pars=NULL,Control,Area.adjust=NUL
   Iw.prop=Iw
   Phi.prop=Phi
   M.prop=M
+
   
   if(DEBUG){
     for(it in 1:t.steps){
@@ -295,19 +296,28 @@ mcmc_OPRS<-function(Predictors=NULL,Data,Prior.pars=NULL,Control,Area.adjust=NUL
     A[[1]]=Init.pred
     for(it in 2:(t.steps-1)){  #forward
       P[[it]]=tcrossprod(MM[[it]]%*%P[[it-1]],L[[it-1]])+Q
-      Finv[[it]]=solve(H[[it]]%*%P[[it]]%*%H.t[[it]]+R[[it]])
-      G[[it]]=MM[[it+1]]%*%(P[[it]]%*%(H.t[[it]]%*%Finv[[it]]))
-      A[[it]]=MM[[it]]%*%A[[it-1]]+G[[it-1]]%*%Nu.list[[it-1]]
-      Nu.list[[it]]=Z.star[Which.list2[[it]]]-H[[it]]%*%A[[it]]
-      L[[it]]=MM[[it+1]]-G[[it]]%*%H[[it]]    
+      if(Nt.obs[it]>0)Finv[[it]]=solve(H[[it]]%*%P[[it]]%*%H.t[[it]]+R[[it]])
+      G[[it]]=0
+      if(Nt.obs[it]>0)G[[it]]=MM[[it+1]]%*%(P[[it]]%*%(H.t[[it]]%*%Finv[[it]]))
+      A[[it]]=MM[[it]]%*%A[[it-1]]
+      if(Nt.obs[it-1]>0)A[[it]]=A[[it]]+G[[it-1]]%*%Nu.list[[it-1]]
+      Nu.list[[it]]=Z.star[Which.list2[[it]]]
+      if(Nt.obs[it]>0)Nu.list[[it]]=Nu.list[[it]]-H[[it]]%*%A[[it]]
+      L[[it]]=MM[[it+1]]
+      if(Nt.obs[it]>0)L[[it]]=L[[it]]-G[[it]]%*%H[[it]]
     }
     P[[t.steps]]=tcrossprod(MM[[t.steps]]%*%P[[t.steps-1]],L[[t.steps-1]])+Q
     Finv[[t.steps]]=solve(H[[t.steps]]%*%P[[t.steps]]%*%H.t[[t.steps]]+R[[t.steps]])
     G[[t.steps]]=MM[[t.steps]]%*%(P[[t.steps]]%*%(H.t[[t.steps]]%*%Finv[[t.steps]]))
     L[[t.steps]]=MM[[t.steps]]-G[[t.steps]]%*%H[[t.steps]]  #use MM[[t.steps]] here since we don't really care about t.steps+1
-    A[[t.steps]]=MM[[t.steps]]%*%A[[t.steps-1]]+G[[t.steps-1]]%*%Nu.list[[t.steps-1]]    
+    A[[t.steps]]=MM[[t.steps]]%*%A[[t.steps-1]]
+    if(Nt.obs[t.steps-1]>0)A[[t.steps]]=A[[t.steps]]+G[[t.steps-1]]%*%Nu.list[[t.steps-1]]   
+    #else A[[t.steps]]=MM[[t.steps]]%*%A[[t.steps-1]]
     Nu.list[[t.steps]]=Z.star[Which.list2[[t.steps]]]-H[[t.steps]]%*%A[[t.steps]]
-    for(it in t.steps:2)R.disturb[[it-1]]=H.t[[it]]%*%(Finv[[it]]%*%Nu.list[[it]])+crossprod(L[[it]],R.disturb[[it]])
+    for(it in t.steps:2){
+      R.disturb[[it-1]]=crossprod(L[[it]],R.disturb[[it]])
+      if(Nt.obs[it]>0)R.disturb[[it-1]]=R.disturb[[it-1]]+H.t[[it]]%*%(Finv[[it]]%*%Nu.list[[it]])
+    }
     R.disturb.0=H.t[[1]]%*%(Finv[[1]]%*%Nu.list[[1]])+crossprod(L[[1]],R.disturb[[1]])
     Hat[[1]]=A[[1]]+P[[1]]%*%R.disturb.0
     for(it in 1:(t.steps-1)){
@@ -418,7 +428,7 @@ mcmc_OPRS<-function(Predictors=NULL,Data,Prior.pars=NULL,Control,Area.adjust=NUL
     for(it in 1:t.steps){
       MM[[it]][1:S,1:S]=M[[it]]
       MM[[it]][S+1,S+1]=sigma
-      diag(R[[it]])=1/tau.varepsilon
+      if(Nt.obs[it]>0)diag(R[[it]])=1/tau.varepsilon
     }
     
     

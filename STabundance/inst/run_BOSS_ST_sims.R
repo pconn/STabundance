@@ -2,9 +2,9 @@
 # script to run generic spatio-temporal count data simulations
 require(STabundance)
 
-data(BOSSst_2012data.Rdata)  #boss grid, ice data
-data(Effort2012_BOSSst.Rdata)  #load effort data indicating grid cells and times surveyed (data produced with format_effort.R)
-data(Knot_cell_distances.Rdata) #load object giving K matrix, Q for knots
+data(AlaskaBeringData2012_17April2014)  #boss grid, ice data
+data(Effort2012_BOSSst_22Apr2014)  #load effort data indicating grid cells and times surveyed (data produced with format_effort.R)
+data(Knot_cell_distances) #load object giving K matrix, Q for knots
 
 Model.list=c("RS2closed","CPIF")
 set.seed(12345)
@@ -19,7 +19,7 @@ rm(Old.Grid)
 
 S=nrow(Data$Grid[[1]])
 
-GENERATE=FALSE
+GENERATE=TRUE
 if(GENERATE==TRUE){
   for(igen in 1:2){  #loop over generating model to generate data sets
       for(isim in 1:n.sims){
@@ -43,7 +43,7 @@ for(igen in 1:2){  #loop over generating model to generate data sets
     Data=Sim.data$Data
     if(sum(Effort$Area.hab==0)>0)Effort$Area.hab[which(Effort$Area.hab==0)]=0.0001
      
-    n.knots=length(Data$Knot.locations)
+    n.knots=ncol(K.data$K)
     #calculate kernel densities at grid cell centroids 
     #Cell.centroids=gCentroid(Data$Grid[[1]],byid=TRUE)
     #Distances=gDistance(Data$Knot.locations,Cell.centroids,byid=TRUE)

@@ -63,3 +63,4 @@ pdf(file="sim_Bering_maps.pdf")
 grid.arrange(arrangeGrob(p1,p2,p3,p4,nrow=4))
 dev.off()
 
+save(p1,p2,file="naive_plots.Rda")

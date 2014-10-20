@@ -1,5 +1,5 @@
 # create spatial points object to hold knot locations for process convolution models of BOSS data
-
+library(STabundance)
 library(sp)
 library(rgeos)
 library(Matrix)
@@ -18,12 +18,13 @@ Y=y.min+(y.max-y.min)/6*c(6:0)
 XY=expand.grid(x=X,y=Y)
 
 Knots=SpatialPoints(coords=XY,proj4string=CRS(proj4string(Data$Grid[[1]])))
+#save(Knots,file="BOSS_Knots_SP.Rda")
 
 Distances=gDistance(Knots,Data$Grid[[1]],byid=TRUE)
 Distances=apply(Distances,2,'min')
 my.buffer=150000
 Which.include=which(Distances<my.buffer)
-
+save(Knots,file="BOSS_Knots_SP.Rda")
 Knot.cell.distances=gDistance(Knots[Which.include,],Data$Grid[[1]],byid=TRUE)
 diff.x=(x.max-x.min)/6
 diff.y=(y.max-y.min)/6
@@ -44,3 +45,6 @@ pdf('BOSS_Grid_wKnots.pdf')
 plot(Knots[Which.include,],,col='red',pch=20)
 plot(Data$Grid[[1]],add=TRUE)
 dev.off()
+
+Knots=Knots[Which.include,]
+save(Knots,file="BOSS_Knots_SP.Rda")

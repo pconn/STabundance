@@ -1,0 +1,35 @@
+Package: STabundance
+Maintainer: Paul B Conn <paul.conn@noaa.gov>
+License: Unlimited
+Title: Functions for performing hierarchical analysis of spatio-temporal count
+    data
+Type: Package
+LazyLoad: yes
+Author: P.B. Conn \email{paul.conn@@noaa.gov}
+Description: Functions and scripts for performing hierarchical analysis
+    of spatio-temporal count data, and for running analyses reported in
+    the article "Using spatio-temporal statistical models to estimate animal
+    abundance and infer ecological dynamics." The functions allow one to select
+    one of a number of spatio-temporal statistical models, and to specify
+    fixed effects via standard R formulas.  Analysis is conducted via MCMC.
+Version: 0.91
+Depends:
+    ggplot2,
+    rgeos,
+    mvtnorm,
+    Matrix,
+    sp,
+    hierarchicalDS,
+    plyr,
+    grid,
+    spatstat
+Date: 2014-10-20
+Collate:
+    'mcmc_AST.R'
+    'mcmc_CPIF.R'
+    'mcmc_OPRS.R'
+    'mcmc_STPC.R'
+    'sim_data_Bering.R'
+    'sim_data_generic.R'
+    'sim_funcs.R'
+    'util_funcs.R'
